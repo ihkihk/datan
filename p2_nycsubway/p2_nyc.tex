@@ -1,0 +1,120 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{longtable}
+
+\title{Data Exploration of NYC Subway Dataset}
+\author{Ivailo Kassamakov}
+\date{October 2015}
+\begin{document}
+
+\maketitle
+\begin{abstract}
+The present project is an effort towards fulfilling the requirements of the Data Analyst Nanodegree at Udacity.
+
+The goal is to perform exploratory data analysis on a dataset collected from readings of weather sensors and turnstile counters situated at the stations of the NYC subway.
+\end{abstract}
+
+\section{Introduction}
+
+The input dataset comes as a CSV file containing 42649 records. Each record consist of 27 columns, and their meaning is given in table \ref{tab:col_meaning}
+
+\begin{longtable}[h]{c|l|p{8cm}}
+
+\hline
+Num & Column name & Column Description \\[3pt]
+\hline
+\endfirsthead
+
+%\hline
+\multicolumn{3}{c}{(Table Cont\'d)}\\
+\hline
+Num & Column name & Column Description \\[3pt]
+\hline
+
+\endhead
+
+\hline
+\multicolumn{3}{c}{(Continues on next page)}\\
+\endfoot
+
+
+\hline
+\caption{Meaning of the columns in the input dataset
+\label{tab:col_meaning}}
+\endlastfoot
+
+ 1 & UNIT & Remote unit that collects turnstile information. Can collect from multiple banks of turnstiles. Large subway stations can have more than one unit. \\[3pt]
+ 
+2 & DATEn & Date in “yyyy-mm-dd” (2011-05-21) format. \\[3pt]
+
+3 & TIMEn & Time in “hh:mm:ss” (08:05:02) format. \\[3pt]
+
+4 & ENTRIESn & Raw reading of cumulative turnstile entries from the remote unit. Occasionally resets to 0. \\[3pt]
+
+5 & EXITSn & Raw reading of cumulative turnstile exits from the remote unit. Occasionally resets to 0. \\[3pt]
+
+6 & ENTRIESn\_hourly & Difference in ENTRIES from the previous REGULAR reading.\\[3pt] 
+
+7 & EXITSn\_hourly & Difference in EXITS from the previous REGULAR reading. \\[3pt]
+
+8 & datetime & Date and time in “yyyy-mm-dd hh:mm:ss” format (2011-05-01 00:00:00). Can be parsed into a Pandas \tt datetime \rm object without modifications. \\[3pt]
+
+9 & hour & Hour of the timestamp from TIMEn. Truncated rather than rounded. \\[3pt]
+
+10 & day\_week & Integer (0--6 Mon--Sun) corresponding to the day of the week. \\[3pt]
+
+11 & weekday & Indicator (0 or 1) if the date is a weekday (Mon--Fri). \\[3pt]
+
+12 & station & Subway station corresponding to the remote unit. \\[3pt]
+
+13 & latitude & Latitude of the subway station corresponding to the remote unit.  \\[3pt]
+
+14 & longitude & Longitude of the subway station corresponding to the remote unit. \\[3pt]
+
+15 & conds & Categorical variable of the weather conditions (Clear, Cloudy etc.) for the time and location. \\[3pt]
+
+16 & fog & Indicator (0 or 1) if there was fog at the time and location. \\[3pt]
+
+17 & precipi & Precipitation in inches at the time and location. \\[3pt]
+
+18 & pressurei & Barometric pressure in inches Hg at the time and location. \\[3pt] 
+
+19 & rain  & Indicator (0 or 1) if rain occurred within the calendar day at the location. \\[3pt]
+
+20 & tempi & Temperature in $^{\circ}{\rm F}$ at the time and location. \\[3pt]
+
+21 & wspdi & Wind speed  in mph at the time and location. \\[3pt]
+
+22 & meanprecipi & Daily average of \tt precipi \rm for the location. \\[3pt]
+
+23 & meanpressurei & Daily average of \tt pressurei \rm for the location. \\[3pt]
+
+24 & meantempi & Daily average of \tt tempi \rm for the location. \\[3pt]
+
+25 & meanwspdi & Daily average of \tt wspdi \rm for the location. \\[3pt]
+
+26 & weather\_lat & Latitude of the weather station the weather data is from. \\[3pt]
+
+27 & weather\_lon & Longitude of the weather station the weather data is from. 
+ 
+\end{longtable}
+
+The following exploratory and graphic analysis will be performed:
+\begin{itemize}
+\item{ Map the subway stations}
+\item{ Order the subway stations by number of UNITS in them}
+\item{ Find out if people ride more during rainy days}
+\item Find out if
+
+\end{itemize}
+
+\section{Some information about the NYC subway}
+
+Looking at the input dataset we can glean the following information about the NYC subway:
+\begin{itemize}
+\item There are 207 subway stations.
+\item There are 240 UNITs, indicating that some stations have more than one unit.
+\end{itemize}
+
+\end{document}
