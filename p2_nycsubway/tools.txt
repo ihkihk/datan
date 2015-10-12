@@ -1,5 +1,14 @@
 https://www.sharelatex.com
 http://www.tablesgenerator.com
 http://www.maptiler.org/
+http://www.maptiler.org/photoshop-google-maps-overlay-tiles/ - Google Maps Mashup, obtain PNG with coordinates
 https://www.getdatajoy.com
+http://mal2.ch/stuff/latlontomercator.html
+
+
+http://wiki.openstreetmap.org/wiki/Mercator
+https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-mercator-projection/ - with the formulas!
+https://msdn.microsoft.com/en-us/library/bb259689.aspx - description of Bings map
+http://webdesign.tutsplus.com/tutorials/the-google-maps-api-and-custom-overlays--webdesign-13868
+
 
