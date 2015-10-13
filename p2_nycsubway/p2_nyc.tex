@@ -1,7 +1,9 @@
 \documentclass{article}
+\usepackage[a4paper, portrait, margin=1.5cm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{longtable}
+\usepackage{graphicx}
 
 \title{Data Exploration of NYC Subway Dataset}
 \author{Ivailo Kassamakov}
@@ -27,7 +29,7 @@ Num & Column name & Column Description \\[3pt]
 \endfirsthead
 
 %\hline
-\multicolumn{3}{c}{(Table Cont\'d)}\\
+\multicolumn{3}{c}{(Table Cont'd)}\\
 \hline
 Num & Column name & Column Description \\[3pt]
 \hline
@@ -102,10 +104,13 @@ Num & Column name & Column Description \\[3pt]
 
 The following exploratory and graphic analysis will be performed:
 \begin{itemize}
-\item{ Map the subway stations}
-\item{ Order the subway stations by number of UNITS in them}
-\item{ Find out if people ride more during rainy days}
-\item Find out if
+\item Map the subway stations.
+\item Order the subway stations by number of UNITS in them.
+\item Find out if people ride more during rainy days.
+\item Determine ridership as a function of time-of-day.
+\item Determine ridership as a function of day-of-week.
+\item Create a predictive model for the ridership.
+
 
 \end{itemize}
 
@@ -114,7 +119,108 @@ The following exploratory and graphic analysis will be performed:
 Looking at the input dataset we can glean the following information about the NYC subway:
 \begin{itemize}
 \item There are 207 subway stations.
-\item There are 240 UNITs, indicating that some stations have more than one unit.
+\item There are 240 UNITs, indicating that some stations have more than one unit (\emph{multi-unit} stations).
+\item There are 28 multi-unit stations, as given in table \ref{tab:multi-unit-stations}
+\item The dataset has been collected during the period 5/1/11-5/31/11, at times 00:00:00, 04:00:00, 08:00:00, 12:00:00, 16:00:00, 20:00:00. For most, but not all UNITs data has been collected for each of the 31 days of the period. For the days, when data has been collected, this has been done for all 6 time points. The UNITs  which miss data for some days of the period are: R228, R253, R260, R273, R295, R356, R453, R459.
 \end{itemize}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l|c}
+\hline
+Station & Number of UNITs\\
+\hline
+111 ST &            2\\[3pt]
+125 ST  &           2\\[3pt]
+145 ST   &          3\\[3pt]
+167 ST    &         2\\[3pt]
+18 AVE     &        2\\[3pt]
+23 ST-6 AVE &       2\\[3pt]
+25 ST        &      2\\[3pt]
+34 ST-HERALD SQ &   2\\[3pt]
+34 ST-PENN STA  &   3\\[3pt]
+42 ST-TIMES SQ  &   2\\[3pt]
+50 ST           &   3\\[3pt]
+86 ST           &   3\\[3pt]
+ATLANTIC AVE    &   2\\[3pt]
+BOWLING GREEN   &   2\\[3pt]
+CHAMBERS ST     &   2\\[3pt]
+CHURCH AVE      &   2\\[3pt]
+DEKALB AVE      &   2\\[3pt]
+FORDHAM ROAD    &   2\\[3pt]
+GRAND ST        &   2\\[3pt]
+HOYT ST         &   2\\[3pt]
+JAY ST-METROTEC &   2\\[3pt]
+LEXINGTON AVE   &   3\\[3pt]
+LEXINGTON-53 ST &   2\\[3pt]
+NOSTRAND AVE    &   2\\[3pt]
+PROSPECT AVE    &   2\\[3pt]
+RECTOR ST       &   2\\[3pt]
+SPRING ST       &   2\\[3pt]
+WALL ST         &   2\\
+\hline
+\end{tabular}
+\caption{Multi-unit subway stations}
+\label{tab:multi-unit-stations}
+\end{table}
+
+
+\section {Input dataset correctness}
+
+To judge the quality of the input dataset, we will check it for missing values in the columns, as well as evaluate the range of data in each column.
+
+A quick check with \tt df.apply(pd.isnull,axis=0).any() \rm for missing/NaN values shows that all columns of the input dataset contain \textbf{valid} values. 
+
+The \tt describe() \rm function of the input DataFrame returns the data ranges shown in Table \ref{tab:input-set-describe}. A simple visual check confirms that the data are in their expected ranges, and there are not outliers.
+
+% Please add the following required packages to your document preamble:
+% \usepackage{graphicx}
+\begin{table}[]
+\centering
+%\resizebox{\textwidth}{!}{%
+\begin{tabular}{l| llll}
+\hline
+Description      & Count &  min & max           \\
+\hline
+ENTRIESn         & 42649 &  0   & 23577460  \\
+EXITSn           & 42649 &  0   & 14937820  \\
+ENTRIESn\_hourly & 42649 &  0   & 32814  \\
+EXITSn\_hourly   & 42649 &  0   & 34828  \\
+hour             & 42649 &  0   & 20  \\
+day\_week        & 42649 &  0   & 6  \\
+weekday          & 42649 &  0   & 1  \\
+latitude         & 42649 &  40.576152  & 40.88918  \\
+longitude        & 42649 &  -74.073622 & -73.75538 \\
+fog              & 42649 &  0   & 1  \\
+precipi          & 42649 &  0   & 0.3  \\
+pressurei        & 42649 &  29.55  & 30.32  \\
+rain             & 42649 &  0   & 1  \\
+tempi            & 42649 &  46.90  & 86.00  \\
+wspdi            & 42649 &  0   & 23.00  \\
+meanprecipi      & 42649 &  0   & 0.1575  \\
+meanpressurei    & 42649 &  29.59 & 30.29333  \\
+meantempi        & 42649 &  49.40  & 79.80  \\
+meanwspdi        & 42649 &  0   & 17.08333  \\
+weather\_lat     & 42649 &  40.600204  & 40.86206  \\
+weather\_lon     & 42649 &  -74.014870 & -73.69418 \\
+\hline
+\end{tabular}
+%}
+\caption{Description of the input dataset}
+\label{tab:input-set-describe}
+\end{table}
+
+\section{Visualizing of the subway stations}
+
+Figure \ref{fig:subway_stations} shows a map of the subway UNITs, according to the geographical coordinates contained in the input set.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{map_stations.png}
+\caption{Map of NYC subway stations}
+\label{fig:subway_stations}
+\end{figure}
+
+
 
 \end{document}
