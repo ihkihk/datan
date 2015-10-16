@@ -11,6 +11,7 @@ https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-m
 https://msdn.microsoft.com/en-us/library/bb259689.aspx - description of Bings map
 http://webdesign.tutsplus.com/tutorials/the-google-maps-api-and-custom-overlays--webdesign-13868
 http://stackoverflow.com/questions/20515554/colorize-voronoi-diagram
+http://blog.yhathq.com/posts/logistic-regression-and-python.html
 
 
 
