@@ -1,0 +1,13 @@
+# Finding the number of unique elements in each group
+df.groupby('a').nunique() - will show for all columns
+df.groupby('a').columnA.nunique() - will show only for column A
+
+# Finding the number of elements in a grouped column
+df.groupby('a').count() - will show for all columns
+
+# Extract multi-index groups with certain values of the index (cross-section)
+df1 = df.groupby(["rain", "weekday"]).columnA.mean().xs((1,1),level=('rain','weekday')
+
+# Finding the row with the max value on a given column
+df.rain.argmax()
+

@@ -4,6 +4,7 @@
 \usepackage[english]{babel}
 \usepackage{longtable}
 \usepackage{graphicx}
+\graphicspath{ {images/} }
 
 \title{Data Exploration of NYC Subway Dataset}
 \author{Ivailo Kassamakov}
@@ -15,6 +16,8 @@
 The present project is an effort towards fulfilling the requirements of the Data Analyst Nanodegree at Udacity.
 
 The goal is to perform exploratory data analysis on a dataset collected from readings of weather sensors and turnstile counters situated at the stations of the NYC subway.
+
+All calculations and graphics have been done within an IPython notebook (an indispensable part of this project), with the \tt pandas\rm, statmodels \rm and \tt matplotlib \rm packages.
 \end{abstract}
 
 \section{Introduction}
@@ -24,14 +27,14 @@ The input dataset comes as a CSV file containing 42649 records. Each record cons
 \begin{longtable}[h]{c|l|p{8cm}}
 
 \hline
-Num & Column name & Column Description \\[3pt]
+No. & Column name & Column Description \\[3pt]
 \hline
 \endfirsthead
 
 %\hline
 \multicolumn{3}{c}{(Table Cont'd)}\\
 \hline
-Num & Column name & Column Description \\[3pt]
+No. & Column name & Column Description \\[3pt]
 \hline
 
 \endhead
@@ -110,8 +113,6 @@ The following exploratory and graphic analysis will be performed:
 \item Determine ridership as a function of time-of-day.
 \item Determine ridership as a function of day-of-week.
 \item Create a predictive model for the ridership.
-
-
 \end{itemize}
 
 \section{Some information about the NYC subway}
@@ -121,10 +122,10 @@ Looking at the input dataset we can glean the following information about the NY
 \item There are 207 subway stations.
 \item There are 240 UNITs, indicating that some stations have more than one unit (\emph{multi-unit} stations).
 \item There are 28 multi-unit stations, as given in table \ref{tab:multi-unit-stations}
-\item The dataset has been collected during the period 5/1/11-5/31/11, at times 00:00:00, 04:00:00, 08:00:00, 12:00:00, 16:00:00, 20:00:00. For most, but not all UNITs data has been collected for each of the 31 days of the period. For the days, when data has been collected, this has been done for all 6 time points. The UNITs  which miss data for some days of the period are: R228, R253, R260, R273, R295, R356, R453, R459.
+\item The dataset has been collected during the period 5/1/11--5/31/11, at times 00:00:00, 04:00:00, 08:00:00, 12:00:00, 16:00:00, and 20:00:00. For most, but not all UNITs data has been collected for each of the 31 days of the period. For the days, when data has been collected, this has been done for all 6 time points. The UNITs  which miss data for some days of the period are: R228, R253, R260, R273, R295, R356, R453, and R459.
 \end{itemize}
 
-\begin{table}[h]
+\begin{table}[ht]
 \centering
 \begin{tabular}{l|c}
 \hline
@@ -169,9 +170,9 @@ WALL ST         &   2\\
 
 To judge the quality of the input dataset, we will check it for missing values in the columns, as well as evaluate the range of data in each column.
 
-A quick check with \tt df.apply(pd.isnull,axis=0).any() \rm for missing/NaN values shows that all columns of the input dataset contain \textbf{valid} values. 
+A quick check with \tt df.isnull().any().any() \rm for missing/NaN values shows that all columns of the input dataset contain \textbf{valid} values. 
 
-The \tt describe() \rm function of the input DataFrame returns the data ranges shown in Table \ref{tab:input-set-describe}. A simple visual check confirms that the data are in their expected ranges, and there are not outliers.
+The \tt describe() \rm function of the input DataFrame returns the data ranges of the numeric columns, as shown in Table \ref{tab:input-set-describe}. A simple visual check confirms that the data are within their expected ranges, and there are no outliers.
 
 % Please add the following required packages to your document preamble:
 % \usepackage{graphicx}
@@ -210,16 +211,51 @@ weather\_lon     & 42649 &  -74.014870 & -73.69418 \\
 \label{tab:input-set-describe}
 \end{table}
 
-\section{Visualizing of the subway stations}
+\section{Visualizing the subway stations}
 
-Figure \ref{fig:subway_stations} shows a map of the subway UNITs, according to the geographical coordinates contained in the input set.
+Figure \ref{fig:subway_stations} shows a map of the subway UNITs, according to the geographical coordinates contained in the input set. All the details of the map production can be seen in the accompanying IPython notebook.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{map_stations.png}
 \caption{Map of NYC subway stations}
 \label{fig:subway_stations}
 \end{figure}
+
+\section{Meteorology}
+
+\subsection{Meteorologic stations and their regions of responsibility}
+
+The weather at the the subway UNITs is measured by meteo stations, located in the UNITs' vicinity. There are 37 meteorologic stations. A given meteo station can service one or more UNITs, and each UNIT is serviced by exactly one meteo station.
+
+Although not required for this project, an effort was made to visualize also the location of the meteo stations. This was done together with calculating a theoretical \textbf{region of responsibility} for each station. The idea of this region is to determine which subway UNITs should be serviced by which meteo station. This calculation was done by performing a Voronoi tessellation of the mesh formed by the meteo stations. Figure \ref{fig:meteo_voronoi} shows these regions in a color-coded way. Additionally, it shows again the subway UNITs, this time color-coding them with the color of their servicing meteo station (as reported by the dataset). We see that most UNITs (not all!) have the same color as the Voronoi region in which they are located---this means that the Voronoi tessellation was a really good way to determine the extents of the area that is best served by a given meteo station. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{meteo_voronoi.png}
+\caption{Map of NYC meteo stations, their Voronoi-calculated regions of responsibility and subway UNITs}
+\label{fig:meteo_voronoi}
+\end{figure}
+
+\section{Meteorologic Conditions}
+
+Using the Haversine geodesic formula (details in the IPython notebook), 
+$$d = 2 r \arcsin \Bigg( \sqrt{ \sin^2 \bigg(\frac{\phi_2 - \phi_1} {2} \bigg) + \cos( \phi_2)\cos(\phi_1)\sin^2\bigg(\frac{\lambda_2 - \lambda_1} {2} \bigg) }\Bigg)$$
+we find the \textbf{extents of the NYC subway area} to be approximately $35 \times 35 \ \rm km$. In this pretty big area we can expect to find different meteorologic conditions at different places at the same time.
+
+Indeed, after performing some exploration with \tt pandas \rm of the initial dataset, we discover the following:
+\begin{itemize}
+\item It is possible for different subway stations to have different weather at the same point of time. For example, at the same moment there are stations having rain and others that do not.
+\item There are 186 unique \tt datetime \rm points in the dataset (i.e. $31 \ \rm days \times 6 \ timepoints = 186$).
+\item Of these 186 datetime points, there are 43 when some subway stations have been receiving rain, while others have not.
+\item Of the remaining 143 datetime points, at 17 we've had all-rainy weather, and at 126---completely no-rain weather.
+\item On '2011-05-19 04:00:00' we've had the most diversified rain conditions, i.e. almost half of the subway stations have been reporting rain, while the rest have been "dry". A map showing this can be seen in Figure \ref{fig:most-diverse-rain-conditions}
+\item And now something \textbf{strange}---there are 459 records, that report both \emph{"Clear"} conditions and \emph{"Rain"}...
+\end{itemize}
+
+
+
+
 
 
 

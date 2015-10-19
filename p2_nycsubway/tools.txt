@@ -4,6 +4,7 @@ http://www.maptiler.org/
 http://www.maptiler.org/photoshop-google-maps-overlay-tiles/ - Google Maps Mashup, obtain PNG with coordinates
 https://www.getdatajoy.com
 http://mal2.ch/stuff/latlontomercator.html
+http://www.ottobib.com/ - for preparing BibTex entries directly from the ISBN of a book
 
 
 http://wiki.openstreetmap.org/wiki/Mercator
@@ -12,6 +13,8 @@ https://msdn.microsoft.com/en-us/library/bb259689.aspx - description of Bings ma
 http://webdesign.tutsplus.com/tutorials/the-google-maps-api-and-custom-overlays--webdesign-13868
 http://stackoverflow.com/questions/20515554/colorize-voronoi-diagram
 http://blog.yhathq.com/posts/logistic-regression-and-python.html
+Which Cities Sleep In, And Which Get To Work Early   http://fivethirtyeight.com/datalab/which-cities-sleep-in-and-which-get-to-work-early/
+
 
 
 
