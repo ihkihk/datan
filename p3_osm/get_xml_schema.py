@@ -55,8 +55,7 @@ def reconstruct_tree(xmlf):
 
 if __name__ == '__main__':
     import sys
-    import os.path
-    
+     
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
