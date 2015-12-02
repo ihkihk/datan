@@ -89,7 +89,7 @@ if __name__ == '__main__':
         print("ERROR: No input file specified", file=sys.stderr)
         sys.exit(1)
 
-    #get_attribs(filename)
+    get_attribs(filename)
     
     get_kv_pairs(filename)
     

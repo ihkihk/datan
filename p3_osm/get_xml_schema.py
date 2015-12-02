@@ -1,4 +1,4 @@
-#! python3
+#! /usr/bin/python3
 
 import xml.etree.cElementTree as ET
 import pprint
@@ -13,7 +13,7 @@ def count_tags(xmlf):
         parser = ET.iterparse(inf, events=('end',))
         for ev, elem in parser:
             tags_counters[elem.tag] += 1
-            elem.find("..").remove(elem)
+            elem.clear()
     
     pprint.pprint(tags_counters)
 
@@ -65,6 +65,6 @@ if __name__ == '__main__':
     inf = open_file.open_file(filename)
     count_tags(inf)
 
-    #inf = open_file.open_file(filename)
-    #reconstruct_tree(inf)
+    inf = open_file.open_file(filename)
+    reconstruct_tree(inf)
 
