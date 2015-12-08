@@ -1,0 +1,54 @@
+- 'FIXME' keys - accuracy/completeness/consistency
+- 'crane:note': {'FIXME'}
+- 'fixme' K
+- set of K:V chosen to describe sth  - validity (acc OSM best practices)
+- set of V for a given K - validity (membership set), accuracy (no typos)
+- addresses contain addr:country, addr:state, addr_city, addr:postcode
+- addr:street - no abbrev: Strasse, weg, allee, platz, gasse, steige,
+- capacity - integer
+- collection_times - 'Mo-Fr 18:00; Sa 14:30; Su 14:45'
+- contact:email, email - well formed
+- contact:fax, contact:mobile, contact:phone, fax, phone - '+41 xx xxx xx xx'
+- contact:website, site, url, website - 'http(s)://xxxxx.xxx.yy' 
+- depth - 3m
+- description - spell-check!
+- ele - integer [319, 813]
+- height - float 'xx.xx m'
+- number_plate - ZH-xxxxx
+- shop - spell-check!
+- uic_ref - integer 8xxxxxx
+
+
+ISSUES found:
+node/tag[@addr:city] - mixture of name and post code (VAL), Zürich written in different ways (small/capital, zue/zü)
+addr:postcode - CH-8005 instead of 8005, 6330 found amidst 8xxxx (VAL)
+addr:place - strange value Emergency??
+addr:street - Tièchestrasse? müllerstrasse
+both artist and artist_name K are present
+amenity K contains a combined V 'post_office;post_box;atm'
+both bus_routes and busline K are present
+contact:fax, contact:mobile, contact:phone, fax, phone  - various
+collection_times - various (separated with ; or , or mixed), PH???
+contact:website, site, url, website - some miss http, others have / at the end
+craft - contains typo in electrican
+cuisine - overlapping values (Schweizer Küche/schweiz, spain/spanish, Indian/indian, lebanese/libanese)
+typo in K 'defibirllator:location'
+ele - mixed floating and integers
+height - some have 'm', others don't
+fuel - contains both 'wood' and 'Holz;Holzkohle'
+'is_in': {'Bezirk Zürich,Zürich,Schweiz,Europe',
+                           'Zürich',
+                           'Zürich,Schweiz,Europe',
+                           'Zürich,switzerland,CH'},
+'maxstay': {'1.5h', '6 h', '30 min', '6 hours'},
+number_plate - 'ZH - 9733','ZH 14085','ZH-14526'
+solitary 'postal_code' K with value 8037 exists
+shop - accesoirs???
+'uic_ref': {'008503090',  '8502572',
+
+
+
+
+
+
+
