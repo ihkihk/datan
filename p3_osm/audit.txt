@@ -9,7 +9,7 @@
 - collection_times - 'Mo-Fr 18:00; Sa 14:30; Su 14:45'
 - contact:email, email - well formed
 - contact:fax, contact:mobile, contact:phone, fax, phone - '+41 xx xxx xx xx'
-- contact:website, site, url, website - 'http(s)://xxxxx.xxx.yy' 
+- contact:website, site, url, website - 'http(s)://xxxxx.xxx.yy'
 - depth - 3m
 - description - spell-check!
 - ele - integer [319, 813]
@@ -22,8 +22,8 @@
 ISSUES found:
 node/tag[@addr:city] - mixture of name and post code (VAL), Zürich written in different ways (small/capital, zue/zü)
 addr:postcode - CH-8005 instead of 8005, 6330 found amidst 8xxxx (VAL)
-addr:place - strange value Emergency??
-addr:street - Tièchestrasse? müllerstrasse
++addr:place - strange value Emergency??
+addr:street - müllerstrasse
 both artist and artist_name K are present
 amenity K contains a combined V 'post_office;post_box;atm'
 both bus_routes and busline K are present
@@ -45,10 +45,3 @@ number_plate - 'ZH - 9733','ZH 14085','ZH-14526'
 solitary 'postal_code' K with value 8037 exists
 shop - accesoirs???
 'uic_ref': {'008503090',  '8502572',
-
-
-
-
-
-
-

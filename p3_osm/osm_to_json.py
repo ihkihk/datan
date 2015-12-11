@@ -1,11 +1,18 @@
 #! /usr/bin/python3
 
+"""Convert an OSM (OpenStreeMap) XML file to JSON.
+
+The code for this script is taken from Udacity's "Data Wrangling with MongoDB"
+lesson.
+"""
+
 import xml.etree.cElementTree as ET
 import codecs
 import pprint
 import re
-import open_file
 import json
+import open_file
+
 
 lower = re.compile(r'^([a-z]|_)*$')
 addr = re.compile(r'^addr:(([a-z]|_)*)')
@@ -21,7 +28,7 @@ def shape_element(element):
     node['created'] = {}
     node['address'] = {}
     node['node_refs'] = []
-                        
+
     if element.tag == "node" or element.tag == "way" :
         node['type'] = element.tag
         node['id'] = element.attrib['id']
@@ -33,40 +40,40 @@ def shape_element(element):
             node['pos'] = [float(element.attrib['lat']), float(element.attrib['lon'])]
         else:
             node['pos'] = None
-                                            
+
         for i in CREATED:
             if i in element.attrib:
                 node['created'][i] = element.attrib[i]
-           
+
         for tag in element.iter('tag'):
             key = tag.attrib['k']
             val = tag.attrib['v']
-            
+
             if problemchars.search(key):
                 continue
-            
+
             m = addr.search(key)
             if not m is None:
                 if not lower_two_colons.search(key):
                     g = m.group(1)
                     node['address'][g] = val
                     continue
-                    
+
             node[key] = val
-            
+
         for tag in element.iter('nd'):
             node['node_refs'].append(tag.attrib['ref'])
-        
+
         if node['address'] == {}:
             del(node['address'])
         if node['node_refs'] == []:
             del(node['node_refs'])
-           
+
         return node
     else:
         return None
 
- 
+
 def process_map(file_in, filename, pretty = False):
     # You do not need to change this file
     file_out = "{0}.json".format(filename)
@@ -86,7 +93,7 @@ def process_map(file_in, filename, pretty = False):
 if __name__ == '__main__':
 
     import sys
-    
+
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
@@ -94,5 +101,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     inf = open_file.open_file(filename)
-    process_map(inf, filename.split('.')[0], True)
-    
+    process_map(inf, filename.split('.')[0])
