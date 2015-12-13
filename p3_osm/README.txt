@@ -71,7 +71,7 @@ in the main text. Note that all scripts use Python3.
   Example run:
     > ./osm_to_json.py zurich-area.osm.bz2
 
-    (This will create the "zurich-area.osm.json" file)
+    (This will create the "zurich-area.json" file)
 
 * some_mongo_queries.py - A hodge-podge throw-away script used to debug some Mongo queries.
 
