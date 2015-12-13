@@ -39,16 +39,16 @@ in the main text. Note that all scripts use Python3.
 
 * dl_osm_xml.py - Python script for downloading from and Overpass API server
   OSM data specified via an Overpass QL query. Currently set to download the
-  Zurich-city area.
+  Zurich-city area into a "zurich-area.osm" file.
 
   Example run:
-    > ./dl_osm_xml.py zurich_area.osm
+    > ./dl_osm_xml.py
 
 * get_xml_schema.py - Python script for printing some statistics about the OSM
   XML data, like tag occurrences and tag attributes.
 
   Example run:
-    > ./get_xml_schema.py zurich_area.osm.bz2
+    > ./get_xml_schema.py zurich-area.osm.bz2
 
 * get_xml_values.py - Python script for extracting the values of all attributes.
   The k:v attributes of <tag> elements are extracted as pairs. Attribute values
@@ -56,7 +56,7 @@ in the main text. Note that all scripts use Python3.
   or "kv-node-tag.txt".
 
   Example run:
-    > ./get_xml_values.py zurich_area.osm.bz2
+    > ./get_xml_values.py zurich-area.osm.bz2
 
     (Note this will create a lot of "attr-*.txt" and "kv-*.txt" files in
      current folder.)
@@ -69,9 +69,9 @@ in the main text. Note that all scripts use Python3.
   with MongoDB" course.
 
   Example run:
-    > ./osm_to_json.py zurich_area.osm.bz2
+    > ./osm_to_json.py zurich-area.osm.bz2
 
-    (This will create the "zurich_area.osm.json" file)
+    (This will create the "zurich-area.osm.json" file)
 
 * some_mongo_queries.py - A hodge-podge throw-away script used to debug some Mongo queries.
 
@@ -79,11 +79,11 @@ in the main text. Note that all scripts use Python3.
 Example Python session using the scripts above
 ----------------------------------------------
 
-> ./dl_osm_xml.py zurich_area.osm
-> bzip2 zurich_area.osm
-> ./get_xml_schema.py zurich_area.osm.bz2
-> ./get_xml_values.py zurich_area.osm.bz2
-> ./osm_to_json.py zurich_area.osm.bz2
+> ./dl_osm_xml.py
+> bzip2 zurich-area.osm
+> ./get_xml_schema.py zurich-area.osm.bz2
+> ./get_xml_values.py zurich-area.osm.bz2
+> ./osm_to_json.py zurich-area.osm.bz2
 > mongoimport --db osm --collection map < zurich-area.json
 > ./audit_phones.py -m osm/map
 
@@ -101,9 +101,9 @@ audit.txt - A throw-away file containing issues found during the manual auditing
 valattr.zip - A zip file containing all "attr-*.txt" and "kv-*.txt" files
   created by the "get_xml_values.py" script
 
-zurich_area.json.bz2 - The compressed result of running "osm_to_json.py"
+zurich-area.json.bz2 - The compressed result of running "osm_to_json.py"
 
-zurich_area.osm.bz2 - The compressed result of running "dl_osm_xml.py"
+zurich-area.osm.bz2 - The compressed result of running "dl_osm_xml.py"
 
 img/zurich-area.png - A map produced by the Maperitive tool from zurich-area.osm.
 
