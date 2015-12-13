@@ -42,6 +42,6 @@ fuel - contains both 'wood' and 'Holz;Holzkohle'
                            'Zürich,switzerland,CH'},
 'maxstay': {'1.5h', '6 h', '30 min', '6 hours'},
 number_plate - 'ZH - 9733','ZH 14085','ZH-14526'
-solitary 'postal_code' K with value 8037 exists
++solitary 'postal_code' K with value 8037 exists
 shop - accesoirs???
 'uic_ref': {'008503090',  '8502572',
