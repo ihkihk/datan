@@ -6,6 +6,15 @@ output: html_document
 ---
 ========================================================
 
+[Report1](http://rstudio-pubs-static.s3.amazonaws.com/24803_abbae17a5e154b259f6f9225da6dade0.html)
+[Report2](https://www.minitab.com/en-us/Published-Articles/Wine-Tasting-by-Numbers--Using-Binary-Logistic-Regression-to-Reveal-the-Preferences-of-Experts/)
+[When a wine is salty, and why it shouldn’t be](http://wineoscope.com/2015/10/02/when-a-wine-is-salty-and-why-it-shouldnt-be/)
+[Chloride concentration in red wines: influence of terroir and grape type](http://www.scielo.br/scielo.php?pid=S0101-20612015000100095&script=sci_arttext)
+[Vinho Verde on Wikipedia](https://en.wikipedia.org/wiki/Vinho_Verde)
+
+Wine Production and Quality By Keith Grainger, Hazel Tattersall
+
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
 # Load all of the packages that you end up using
 # in your analysis in this code chunk.
@@ -17,16 +26,16 @@ output: html_document
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
-library(GGally)
+#library(GGally)
 ```
 
 # Abstract
-This project is an effort towards partial fullfilment of the requirements for the Udacity's Data Analyst Nanodegree.
+This project is an effort towards partial fulfilment of the requirements for the Udacity's Data Analyst Nanodegree.
 
-The purpose is to perform an Exploratory Data Analysis (mono-, bi- and multivariate) on a dataset containing physicochemical measurements and degustation results of a sample of red wines.
+The purpose is to perform an Exploratory Data Analysis (mono-, bi- and multivariate) on a dataset containing physicochemical measurements and tasting results of a sample of red wines.
 
 # Goal of the data analysis
-Our goal with this dataset is to investigate how the physicochemical qualities of the wine affect its quality.
+Our goal with this dataset is to investigate how the chemical qualities of the wine affect its quality. Ideally, we would be able to come up with a regression model that will enable us to predict the quality of wine given its chemical properties.
 
 As the authors of the dataset mention in their notes, it is possible that there are correlations between some of the measured quantities. Therefore, in the course of our work we will try to detect any such interactions between the variables.
 
@@ -47,7 +56,7 @@ We see that there are 1599 observation of wines, each one containing 13 variable
 ```{r echo=FALSE, Removing_X_column}
 w$X <- NULL
 ```
-The rest of the variables are numeric. This is valid for most of them, since they are results of laboratory measurements. However, the "quality" variable is the degustation result, which is categorical variable having an ordinal scale. Therefore, we can convert this variable to an ordered factor, assuming that a higher number indicates a higher quality.
+The rest of the variables are numeric. This is valid for most of them, since they are results of laboratory measurements. However, the "quality" variable is the tasting result, which is categorical variable having an ordinal scale. Therefore, we can convert this variable to an ordered factor, assuming that a higher number indicates a higher quality.
 
 ```{r echo=FALSE, Converting_quality_to_factor}
 w$quality <- factor(w$quality, ordered = T)
@@ -64,63 +73,191 @@ levels(w$quality)
 # Univariate Plots Section
 In this section we perform initials statistical and graphical analysis of the variables contained in the dataset.
 
+As a first check we test the data for any missing (NA) or numerically bad (NaN) data--there is no such data (`r all(!is.na(w))`).
+
 ## Fixed acidity
 ```{r echo=FALSE, Uniplot_fixed_acidity}
 
 plotVar <- function(v,d) {
-  q1 <- qplot(d$v, fill=I("blue"), color=I("black"), alpha=0.5) + 
+  q1 <- qplot(data=d, x=v, fill=I("blue"), color=I("black"), alpha=0.5, xlab=substitute(v)[3]) + 
         theme(legend.position="none")
 
-  q2 <- qplot(d$v, geom="density") + geom_rug()
+  q2 <- qplot(data=d, x=v, geom="density", xlab=substitute(v)[3]) + geom_rug()
 
-  q3 <- qplot("", d$v, geom="boxplot")
+  q3 <- qplot(" ", data=d, y=v, geom="boxplot")
 
   grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
 }
 
 summary(w$fixed.acidity)
-plotVar(fixed.acidity, w)
+plotVar(w$fixed.acidity, w)
 ```
+
+```{r echo=FALSE, useful_functions}
+kurtosis <- function(x) {
+	n <- length(x)
+	z <- (x - mean(x)) / sd(x)
+	sum(z^4)/n - 3
+}
+```
+
+The *fixed acidity* features somewhat normal distribution with some right-skewedness (mean > median) and relatively long tail (kurtosis = `r kurtosis(w$fixed.acidity)`).  
+
+The boxplot identifies many values as outliers.
 
 ## Volatile acidity
 ```{r echo=FALSE, Uniplot_volatile_acidity}
 summary(w$volatile.acidity)
-plotVar(volatile.acidity, w)
+plotVar(w$volatile.acidity, w)
 ```
+
+The *volatile.acidity* has a similar right-skewed distribution and a similarly long tail (kurtosis = `r kurtosis(w$volatile.acidity)`). 
+
+The distribution seems a bit multi-modal. We can see this on a higher-resolution histogram.
+
+```{r echo=FALSE, Uniplot_volatile_acidity_hires}
+
+qplot(data=w, x=volatile.acidity, fill=I("blue"), color=I("black"), alpha=0.5,
+	  binwidth = 0.01) + 
+      theme(legend.position="none")
+```
+
+The boxplot again identifies several values as outliers. 
 
 ## Citric acid
 ```{r echo=FALSE, Uniplot_citric_acid}
 summary(w$citric.acid)
-plotVar(citric.acid, w)
+plotVar(w$citric.acid, w)
 ```
+
+The *citric.acid* variable has many values equal to 0, as well as one value equal to 1 (also shown by the boxplot as an outlier). This outlier can be either a data entry error, or a wine that has excessive amount of citric acid (more than the limit of the measuring instrument). 
+
+As the value table below shows, the resolution of the measurement has been only 0.01 g/dm~3~, which means that all wines containing less than that will appear as 0 in the dataset.
+
+```{r echo=FALSE, Uniplot_citric_acid_table}
+table(w$citric.acid)
+```
+
+We can get a better idea about the distribution by eliminating values 0 and 1. We will also adjust the `binwidth` to correspond to the measurement resolution.
+
+```{r echo=FALSE, Uniplot_citric_acid_cleaned}
+cleaned.citric.acid = subset(w, citric.acid != 0 & citric.acid != 1)
+
+q1 <- qplot(data=cleaned.citric.acid, x=citric.acid, binwidth=0.01, 
+			fill=I("blue"), color=I("black"), alpha=0.5) + 
+			theme(legend.position="none")
+	  
+q2 <- qplot(data=cleaned.citric.acid, x=citric.acid, geom="density") + geom_rug()
+
+grid.arrange(q1, q2, nrow=2)
+```
+
+This distribution appears **artificially** uniform towards the lower values (i.e. there is no gradual reduction of the frequency of the lower values). This can be probably explained with the fact that the winemakers usually add some amount of citric acid to give the wine a fresh (non-flat) body. Further confirmation for this is the presence of three very prominent peaks in the histogram (at 0.02, 0.24 and 0.49); especially the last two can signify that the citric amount has been artificially boosted to 0.25 or 0.50. If the citric acid amounts were due to a *natural process* (like fermentation, as is the case with the other acids), then its distribution would be more *bell-shaped* (the central limit theorem calls for normal distribution of the combined effect of many random processes.)
 
 ## Residual sugar
 ```{r echo=FALSE, Uniplot_residual_sugar}
 summary(w$residual.sugar)
-plotVar(residual.sugar, w)
+plotVar(w$residual.sugar, w)
+```
+
+The IQR range (`r IQR(w$residual.sugar)`) of the *residual.sugar* values is pretty small compared to the total range (`r diff(range(w$residual.sugar))`). This signifies that we're dealing with wines of mostly the same class of sweetness; which is not surprising given that the *"Vinho Verde"* region produces predominantly very fresh wines.
+
+We can classify the wines in terms of sweetness according to the scale mandated by EU directive 753/2002. This scale runs like this:
+
+Sugar content [g/dm^3^] | < 4 |  (4, 12]   |  (12, 45] | > 45
+------------------------|-----|------------|-----------|------
+Sweetness               | Dry | Medium Dry |    Medium | Sweet
+
+We create a new ordered factor called `sweetness` in the original dataframe having levels corresponding to the sweetness degrees above. As the frequency table below shows most of the wines are "dry".
+
+```{r echo=FALSE, Uniplot_sweetness_bins}
+w$sweetness <- cut(w$residual.sugar, 
+					c(0,4,12,45, Inf), 
+					labels=c("dry", "medium.dry", "medium", "sweet"), 
+					ordered_result=T)
+					
+table(w$sweetness)
+```
+
+## Chlorides
+```{r echo=FALSE, Uniplot_chlorides}
+summary(w$chlorides)
+plotVar(w$chlorides, w)
+```
+
+The amount of NaCl (*chlorides*) also shows a bell-shaped distribution with a long tail (kurtosis = `r kurtosis(w$volatile.acidity)`). Most values are again concentrated in a small region (IQR=`r IQR(w$chlorides)` compared to range=`r diff(range(w$residual.sugar))`). This can be explained by the fact that all wines come from a geographically constrained region; it is known that the soil type and micro-climatic conditions of the region have direct influence on the salinity of the wine. Interestingly, some countries limit the amount of chlorides accepted in a wine (e.g. in Brazil it is 0.2 g/dm^3^, while in Australia it is 0.6 g/dm^3^). Generally, levels above 0.5 g/dm^3^ start to give the sensory perception of saltiness (although it depends on the national diet). There is one "outlier" wine in the sample that can trigger a "salty" grimace of the taster.
+
+
+## Free SO~2~
+```{r echo=FALSE, Uniplot_freeSO2}
+summary(w$free.sulfur.dioxide)
+plotVar(w$free.sulfur.dioxide, w)
+```
+
+The winemakers use SO~2~ as an antioxidant and disinfectant. Before bottling the wine they adjust the levels of free SO~2~ usually between 10 and 40 mg/dm^3^ (careful producers relate the amount of SO~2~ to the pH--red wines with low pH need less SO~2~ than ones with higher pH). This range is also pretty visible in the histogram above.
+
+
+## Total SO~2~
+```{r echo=FALSE, Uniplot_totalSO2}
+summary(w$total.sulfur.dioxide)
+plotVar(w$total.sulfur.dioxide, w)
+```
+
+In Europe the permitted level of total SO~2~ is 150 mg/dm^3^ for dry red wines (200 mg/dm^3^ for sugar levels above 5 g/dm^3^). This requirement is also visible from the graphs above. There are two wines that surpass significantly this limit (theoretically they can't be sold on the EU market, but this is possible for the US where the permitted level is 300 mg/dm^3^).
+
+
+## Density
+```{r echo=FALSE, Uniplot_density}
+summary(w$density)
+plotVar(w$density, w)
+```
+
+The *density* variable follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$density)$statistics` at P=`r shapiro.test(w$density)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier tails (hence the outliers in the boxplot).
+
+```{r echo=FALSE, Uniplot_density_qq}
+qqnorm(w$density); qqline(w$density)
+```
+
+## pH
+```{r echo=FALSE, Uniplot_PH}
+summary(w$pH)
+plotVar(w$pH, w)
+```
+
+
+## Sulfates
+```{r echo=FALSE, Uniplot_sulfates}
+summary(w$sulphates)
+plotVar(w$sulphates, w)
+```
+
+## Alcohol
+```{r echo=FALSE, Uniplot_alcohol}
+summary(w$alcohol)
+plotVar(w$alcohol, w)
 ```
 
 # Univariate Analysis
 
 ### What is the structure of your dataset?
 
-The dataset contains 1599 observations of red wines of the Portuguese variety "Vinho Verde". Each observation has 11 inputs (physicochemical measurements) and 1 output (sensory measured quality).
+The dataset contains 1599 observations of red wines from the Portuguese region "Vinho Verde". Each observation has 11 inputs (chemical measurements) and 1 output (subjective assessment of quality).
 
 All laboratory measurements (*input* variables) are numeric and have the following meaning (in brackets are the units of measurement):
 
-* **Fixed acidity** [g/dm3] - the amount of "good" non-volatile acids (e.g. malic, tartaric)
-* **Volatile acidity** [g/dm3] - the amount of "bad" acids (mostly acetic acid)
-* **Citric acid** [g/dm3] - the amount of citric acid
-* **Residual sugar** [g/dm3] - the amount of sugar left after the fermetation has ended
-* **Chlorides** [g/dm3] - the amount of salts in the wine
-* **Free sulfur dioxide (SO~2~)** [mg/dm3] - the free form of SO~2~ exists in equilibrium between molecular SO~2~ (as a dissolved gas) and bisulfite ion; it prevents microbial growth and the oxidation of wine.
-* **Total sulfur dioxide (SO~2~)** [mg/dm3] - amount of free and bound forms of S02; in low concentrations, SO~2~ is mostly undetectable in wine, but at free SO2 concentrations over 50 ppm, SO~2~ becomes evident in the nose and taste of wine.
-* **Density** [kg/dm3] - the density of is close to that of water [1kg/dm3] depending on the percent alcohol and sugar content
+* **Fixed acidity** [g/dm^3^] - the amount of "good" non-volatile acids (e.g. malic, tartaric)
+* **Volatile acidity** [g/dm^3^] - the amount of "bad" acids (mostly acetic acid)
+* **Citric acid** [g/dm^3^] - the amount of citric acid
+* **Residual sugar** [g/dm^3^] - the amount of sugar left after the fermentation has ended
+* **Chlorides (mostly NaCl)** [g/dm^3^] - the amount of salts in the wine
+* **Free sulfur dioxide (SO~2~)** [mg/dm^3^] - the free form of SO~2~ exists in equilibrium between molecular SO~2~ (as a dissolved gas) and bisulfite ion; it prevents microbial growth and the oxidation of wine.
+* **Total sulfur dioxide (SO~2~)** [mg/dm^3^] - amount of free and bound forms of SO~2~; in low concentrations, SO~2~ is mostly undetectable in wine, but at free SO~2~ concentrations over 50 ppm, SO~2~ becomes evident in the nose and taste of wine.
+* **Density** [kg/dm^3^] - the density of is close to that of water [1kg/dm3] depending on the percent alcohol and sugar content
 * **pH** - describes the acidity of the wine: 0 (very acidic) to 14 (very basic)
-* **Sulphates (mostly K~2~SO~4~)** - a wine additive which can contribute to sulfur dioxide gas (S02) levels, wich acts as an antimicrobial and antioxidant
-* **Alcohol** [% by volume] - the percent alcohol content of the wine
+* **Sulfates (mostly K~2~SO~4~)** [g/dm^3^] - a wine additive which can contribute to sulfur dioxide gas (SO~2~) levels, which acts as an antimicrobial and antioxidant agent.
+* **Alcohol** [% by volume] - the percentage of alcohol content
 
-The *output* variable is the factor **quality** having the following ordinal scale: 0 (lowest) to 10 (highest) quality. The value of this variable is obtained as the median of three degustation results performed by different experts. The measured wines are in the range 3-8, i.e. no wine was classified as "worst" or "excellent".
+The *output* variable is the factor **quality** having the following ordinal scale: 0 (lowest) to 10 (highest). The value of this variable is obtained as the median of three subjective sensory tasting results performed by different oenologists. The measured wines are in the range 3-8, i.e. no wine was classified as "worst" or "excellent".
 
 
 ### What is/are the main feature(s) of interest in your dataset?
