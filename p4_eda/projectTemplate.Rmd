@@ -1,4 +1,9 @@
-TITLE by YOUR_NAME_HERE
+---
+title: "Exploratory Data Analysis in R"
+author: "Ivailo Kassamakov"
+date: "February 2, 2016"
+output: html_document
+---
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
@@ -10,21 +15,113 @@ TITLE by YOUR_NAME_HERE
 # You should set echo=FALSE for all code chunks in your file.
 
 library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(GGally)
 ```
+
+# Abstract
+This project is an effort towards partial fullfilment of the requirements for the Udacity's Data Analyst Nanodegree.
+
+The purpose is to perform an Exploratory Data Analysis (mono-, bi- and multivariate) on a dataset containing physicochemical measurements and degustation results of a sample of red wines.
+
+# Goal of the data analysis
+Our goal with this dataset is to investigate how the physicochemical qualities of the wine affect its quality.
+
+As the authors of the dataset mention in their notes, it is possible that there are correlations between some of the measured quantities. Therefore, in the course of our work we will try to detect any such interactions between the variables.
+
+# Dataset loading and some preliminary cleaning
+
+We start by loading the dataset (stored in a CSV file) into a data.frame:
+
 
 ```{r echo=FALSE, Load_the_Data}
 # Load the Data
+w <- read.csv("wineQualityReds.csv")
+```
+Some information about the number and the structure of the observations
+```{r echo=FALSE, Dataset_structure}
+str(w)
+```
+We see that there are 1599 observation of wines, each one containing 13 variables. We can safely remove the "X" column as it simply repeats the natural index of the observations. 
+```{r echo=FALSE, Removing_X_column}
+w$X <- NULL
+```
+The rest of the variables are numeric. This is valid for most of them, since they are results of laboratory measurements. However, the "quality" variable is the degustation result, which is categorical variable having an ordinal scale. Therefore, we can convert this variable to an ordered factor, assuming that a higher number indicates a higher quality.
 
+```{r echo=FALSE, Converting_quality_to_factor}
+w$quality <- factor(w$quality, ordered = T)
+str(w)
 ```
 
-# Univariate Plots Section
-```{r echo=FALSE, Univariate_Plots}
+In this last "str" output we clearly see that "quality" is now represented by a 6-level ordered factor with the following levels:
 
+```{r echo=FALSE, quality_levels}
+levels(w$quality)
+```
+
+
+# Univariate Plots Section
+In this section we perform initials statistical and graphical analysis of the variables contained in the dataset.
+
+## Fixed acidity
+```{r echo=FALSE, Uniplot_fixed_acidity}
+
+plotVar <- function(v,d) {
+  q1 <- qplot(d$v, fill=I("blue"), color=I("black"), alpha=0.5) + 
+        theme(legend.position="none")
+
+  q2 <- qplot(d$v, geom="density") + geom_rug()
+
+  q3 <- qplot("", d$v, geom="boxplot")
+
+  grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
+}
+
+summary(w$fixed.acidity)
+plotVar(fixed.acidity, w)
+```
+
+## Volatile acidity
+```{r echo=FALSE, Uniplot_volatile_acidity}
+summary(w$volatile.acidity)
+plotVar(volatile.acidity, w)
+```
+
+## Citric acid
+```{r echo=FALSE, Uniplot_citric_acid}
+summary(w$citric.acid)
+plotVar(citric.acid, w)
+```
+
+## Residual sugar
+```{r echo=FALSE, Uniplot_residual_sugar}
+summary(w$residual.sugar)
+plotVar(residual.sugar, w)
 ```
 
 # Univariate Analysis
 
 ### What is the structure of your dataset?
+
+The dataset contains 1599 observations of red wines of the Portuguese variety "Vinho Verde". Each observation has 11 inputs (physicochemical measurements) and 1 output (sensory measured quality).
+
+All laboratory measurements (*input* variables) are numeric and have the following meaning (in brackets are the units of measurement):
+
+* **Fixed acidity** [g/dm3] - the amount of "good" non-volatile acids (e.g. malic, tartaric)
+* **Volatile acidity** [g/dm3] - the amount of "bad" acids (mostly acetic acid)
+* **Citric acid** [g/dm3] - the amount of citric acid
+* **Residual sugar** [g/dm3] - the amount of sugar left after the fermetation has ended
+* **Chlorides** [g/dm3] - the amount of salts in the wine
+* **Free sulfur dioxide (SO~2~)** [mg/dm3] - the free form of SO~2~ exists in equilibrium between molecular SO~2~ (as a dissolved gas) and bisulfite ion; it prevents microbial growth and the oxidation of wine.
+* **Total sulfur dioxide (SO~2~)** [mg/dm3] - amount of free and bound forms of S02; in low concentrations, SO~2~ is mostly undetectable in wine, but at free SO2 concentrations over 50 ppm, SO~2~ becomes evident in the nose and taste of wine.
+* **Density** [kg/dm3] - the density of is close to that of water [1kg/dm3] depending on the percent alcohol and sugar content
+* **pH** - describes the acidity of the wine: 0 (very acidic) to 14 (very basic)
+* **Sulphates (mostly K~2~SO~4~)** - a wine additive which can contribute to sulfur dioxide gas (S02) levels, wich acts as an antimicrobial and antioxidant
+* **Alcohol** [% by volume] - the percent alcohol content of the wine
+
+The *output* variable is the factor **quality** having the following ordinal scale: 0 (lowest) to 10 (highest) quality. The value of this variable is obtained as the median of three degustation results performed by different experts. The measured wines are in the range 3-8, i.e. no wine was classified as "worst" or "excellent".
+
 
 ### What is/are the main feature(s) of interest in your dataset?
 
