@@ -8,9 +8,10 @@ output: html_document
 
 [Report1](http://rstudio-pubs-static.s3.amazonaws.com/24803_abbae17a5e154b259f6f9225da6dade0.html)
 [Report2](https://www.minitab.com/en-us/Published-Articles/Wine-Tasting-by-Numbers--Using-Binary-Logistic-Regression-to-Reveal-the-Preferences-of-Experts/)
-[When a wine is salty, and why it shouldn’t be](http://wineoscope.com/2015/10/02/when-a-wine-is-salty-and-why-it-shouldnt-be/)
+[When a wine is salty, and why it shouldn?t be](http://wineoscope.com/2015/10/02/when-a-wine-is-salty-and-why-it-shouldnt-be/)
 [Chloride concentration in red wines: influence of terroir and grape type](http://www.scielo.br/scielo.php?pid=S0101-20612015000100095&script=sci_arttext)
 [Vinho Verde on Wikipedia](https://en.wikipedia.org/wiki/Vinho_Verde)
+[Box-Cox Normality Transformation](http://www.itl.nist.gov/div898/handbook/eda/section3/boxcoxno.htm)
 
 Wine Production and Quality By Keith Grainger, Hazel Tattersall
 
@@ -26,7 +27,8 @@ Wine Production and Quality By Keith Grainger, Hazel Tattersall
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
-#library(GGally)
+library(GGally)
+library(corrgram)
 ```
 
 # Abstract
@@ -52,6 +54,7 @@ Some information about the number and the structure of the observations
 ```{r echo=FALSE, Dataset_structure}
 str(w)
 ```
+
 We see that there are 1599 observation of wines, each one containing 13 variables. We can safely remove the "X" column as it simply repeats the natural index of the observations. 
 ```{r echo=FALSE, Removing_X_column}
 w$X <- NULL
@@ -69,11 +72,14 @@ In this last "str" output we clearly see that "quality" is now represented by a 
 levels(w$quality)
 ```
 
+We test the data for any missing (NA) or numerically bad (NaN) data--there is no such data (`r all(!is.na(w))`).
+
+Otherwise, the dataset is already in a **"tidy"** state--a row per observation, with all observation attributes in separate columns. 
 
 # Univariate Plots Section
 In this section we perform initials statistical and graphical analysis of the variables contained in the dataset.
 
-As a first check we test the data for any missing (NA) or numerically bad (NaN) data--there is no such data (`r all(!is.na(w))`).
+
 
 ## Fixed acidity
 ```{r echo=FALSE, Uniplot_fixed_acidity}
@@ -84,7 +90,7 @@ plotVar <- function(v,d) {
 
   q2 <- qplot(data=d, x=v, geom="density", xlab=substitute(v)[3]) + geom_rug()
 
-  q3 <- qplot(" ", data=d, y=v, geom="boxplot")
+  q3 <- qplot(" ", data=d, y=v, geom="boxplot", ylab=substitute(v)[3])
 
   grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
 }
@@ -94,14 +100,22 @@ plotVar(w$fixed.acidity, w)
 ```
 
 ```{r echo=FALSE, useful_functions}
+# Pearsonâ€™s measure of kurtosis
 kurtosis <- function(x) {
 	n <- length(x)
 	z <- (x - mean(x)) / sd(x)
 	sum(z^4)/n - 3
 }
+
+# Pearson's moment coefficient of skewness
+skewness <- function(x) {
+  n <- length(x)
+  z <- (x - mean(x)) / sd(x)
+  sum(z^3)/n
+}
 ```
 
-The *fixed acidity* features somewhat normal distribution with some right-skewedness (mean > median) and relatively long tail (kurtosis = `r kurtosis(w$fixed.acidity)`).  
+The *fixed acidity* features somewhat normal distribution with some right-skewedness (skewness = `r skewness(w$fixed.acidity)`) and relatively long tail (excess kurtosis = `r kurtosis(w$fixed.acidity)`).  
 
 The boxplot identifies many values as outliers.
 
@@ -111,7 +125,7 @@ summary(w$volatile.acidity)
 plotVar(w$volatile.acidity, w)
 ```
 
-The *volatile.acidity* has a similar right-skewed distribution and a similarly long tail (kurtosis = `r kurtosis(w$volatile.acidity)`). 
+The *volatile.acidity* has a similar right-skewed distribution (skewness = `r skewness(w$volatile.acidity)`) and a similarly long tail (kurtosis = `r kurtosis(w$volatile.acidity)`). 
 
 The distribution seems a bit multi-modal. We can see this on a higher-resolution histogram.
 
@@ -185,7 +199,7 @@ summary(w$chlorides)
 plotVar(w$chlorides, w)
 ```
 
-The amount of NaCl (*chlorides*) also shows a bell-shaped distribution with a long tail (kurtosis = `r kurtosis(w$volatile.acidity)`). Most values are again concentrated in a small region (IQR=`r IQR(w$chlorides)` compared to range=`r diff(range(w$residual.sugar))`). This can be explained by the fact that all wines come from a geographically constrained region; it is known that the soil type and micro-climatic conditions of the region have direct influence on the salinity of the wine. Interestingly, some countries limit the amount of chlorides accepted in a wine (e.g. in Brazil it is 0.2 g/dm^3^, while in Australia it is 0.6 g/dm^3^). Generally, levels above 0.5 g/dm^3^ start to give the sensory perception of saltiness (although it depends on the national diet). There is one "outlier" wine in the sample that can trigger a "salty" grimace of the taster.
+The amount of NaCl (*chlorides*) also shows a bell-shaped distribution with a long tail (excess kurtosis = `r kurtosis(w$volatile.acidity)`). Most values are again concentrated in a small region (IQR=`r IQR(w$chlorides)` compared to range=`r diff(range(w$residual.sugar))`). This can be explained by the fact that all wines come from a geographically constrained region; it is known that the soil type and micro-climatic conditions of the region have direct influence on the salinity of the wine. Interestingly, some countries limit the amount of chlorides accepted in a wine (e.g. in Brazil it is 0.2 g/dm^3^, while in Australia it is 0.6 g/dm^3^). Generally, levels above 0.5 g/dm^3^ start to give the sensory perception of saltiness (although it depends on the national diet). There is one "outlier" wine in the sample that can trigger a "salty" grimace of the taster.
 
 
 ## Free SO~2~
@@ -212,7 +226,7 @@ summary(w$density)
 plotVar(w$density, w)
 ```
 
-The *density* variable follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$density)$statistics` at P=`r shapiro.test(w$density)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier tails (hence the outliers in the boxplot).
+The *density* variable follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$density)$statistic` at P=`r shapiro.test(w$density)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier tails (hence the outliers in the boxplot).
 
 ```{r echo=FALSE, Uniplot_density_qq}
 qqnorm(w$density); qqline(w$density)
@@ -224,6 +238,13 @@ summary(w$pH)
 plotVar(w$pH, w)
 ```
 
+The *pH* variable also follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$pH)$statistics` at P=`r shapiro.test(w$pH)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier right tail (hence the outliers in the boxplot).
+
+```{r echo=FALSE, Uniplot_ph_qq}
+qqnorm(w$pH); qqline(w$pH)
+```
+ 
+The mean pH lies at 3.3 which is consistent with the observation that the wines of "Vinho Verde" are pretty acid and fresh.
 
 ## Sulfates
 ```{r echo=FALSE, Uniplot_sulfates}
@@ -231,17 +252,34 @@ summary(w$sulphates)
 plotVar(w$sulphates, w)
 ```
 
+The *sulfates* variable (measuring predominantly the amount of K~2~SO~4~) has a bell-shaped right-skewed distribution, with longer right tail. 
+
+Normally fresh (not very old) wines contain around 0.4-0.7 g/dm^3^ of K~2~SO~4~ which is very well seen in the histogram (median 0.62).
+
 ## Alcohol
 ```{r echo=FALSE, Uniplot_alcohol}
 summary(w$alcohol)
 plotVar(w$alcohol, w)
 ```
 
+The *alcohol* content shows a significant right-skewedness (skewness = `r skewness(w$alcohol)`). As for all right-skewed distributions, this is due to a value limit situated on the left. This limit is the stipulation of the European legislation for minimum alcohol content to be min. 8.5% and max. 15%. We see this values clearly in the statistics above.
+
+
+## Quality
+
+The *quality* variable is categorical, so we will plot it in a barplot
+```{r echo=FALSE, Uniplot_quality}
+summary(w$quality)
+qplot(w$quality, color=I("black"), fill=I("orange"))
+```
+
+We see that the majority of wines are in the middle quality range.
+
 # Univariate Analysis
 
 ### What is the structure of your dataset?
 
-The dataset contains 1599 observations of red wines from the Portuguese region "Vinho Verde". Each observation has 11 inputs (chemical measurements) and 1 output (subjective assessment of quality).
+The dataset contains 1599 observations of red wines from the Portuguese region "Vinho Verde". Each observation has 11 inputs (chemical measurements) and 1 output (subjective sensory assessment of quality).
 
 All laboratory measurements (*input* variables) are numeric and have the following meaning (in brackets are the units of measurement):
 
@@ -257,21 +295,76 @@ All laboratory measurements (*input* variables) are numeric and have the followi
 * **Sulfates (mostly K~2~SO~4~)** [g/dm^3^] - a wine additive which can contribute to sulfur dioxide gas (SO~2~) levels, which acts as an antimicrobial and antioxidant agent.
 * **Alcohol** [% by volume] - the percentage of alcohol content
 
-The *output* variable is the factor **quality** having the following ordinal scale: 0 (lowest) to 10 (highest). The value of this variable is obtained as the median of three subjective sensory tasting results performed by different oenologists. The measured wines are in the range 3-8, i.e. no wine was classified as "worst" or "excellent".
+The *output* variable is the factor **quality** having the following ordinal scale: 0 (lowest) to 10 (highest). The value of this variable is obtained as the median of three subjective sensory tasting assessments performed by different oenologists. The measured wines are in the range 3-8, i.e. no wine was classified as "very bad" or "excellent".
 
 
 ### What is/are the main feature(s) of interest in your dataset?
 
+Our interest lies in finding a relationship that can predict the wine *quality* based on the various *chemical* measurements. It is not very easy to make apriori assumptions as to which chemical variables have a significant effect on the sensory perception of the wine. Still, what comes first to mind is the *alcohol* content and the *pH*, both being aspects that are very easily perceived. Of the other chemical substances, the measured *chloride* contents is mostly below the detection threshold. Likewise, *sulphur dioxide (aka sulfites)* have neither smell, nor taste, so it is not very likely that they can directly determine the tasting assessment. On the other hand, the *sulphates* can have very different tastes depending on their concentration, as shown on the diagram below.
+
+![](k2so4_taste.png)
+
 ### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+
+*Citric acid* gives a freshness to the wine, and as such will probably affect positively the tasting. Contrarily to it, the *acetic* acid (quantified by the *volatile.acidity* variable) will give an unpleasant characteristic vinegar taste. We have to keep in mind that higher acidity will correlate with low levels of pH, therefore it is important to distinguish the case when low pH is due to the bad "acetic" acid.
 
 ### Did you create any new variables from existing variables in the dataset?
 
+A new categorical variable `sweetness` was created to classify each wine according to its residual sugar content. It has the following levels: "dry" < "medium dry" < "medium" < "sweet".
+
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
+Most of the distributions are right-skewed. This is due to measuring quantities that cannot be below a given limit (e.g. due to some legislation). ?????????
+```{r echo=FALSE, Univariate_xform2normality_alcohol}
+# Normal probability plot for original variable
+qqnorm(w$alcohol); qqline(w$alcohol)			
+# Illustration of Log-Likelihood profile
+boxcox(w$alcohol~1)	            
+# Estimaton of Box-Cox lambda
+p<-powerTransform(w$alcohol)    
+# Box-Cox transformation
+y<-bcPower(w$alcohol,p$lambda)	
+# Normal probability plot for transformed variable
+qqnorm(y)
+```
+
+```{r echo=FALSE, Univariate_xform2normality_citricacid}
+# Normal probability plot for original variable
+citracid <- subset(w, citric.acid!=0)$citric.acid
+qqnorm(w$citric.acid); qqline(w$citric.acid)			
+# Illustration of Log-Likelihood profile
+boxcox(citracid~1)	            
+# Estimaton of Box-Cox lambda
+p<-powerTransform(citracid)    
+# Box-Cox transformation
+y<-bcPower(citracid,p$lambda)	
+# Normal probability plot for transformed variable
+qqnorm(y); qqline(y)
+hist(y)
+shapiro.test(y)
+hist(citracid)
+shapiro.test(citracid)
+```
 
 
 # Bivariate Plots Section
-```{r echo=FALSE, Bivariate_Plots}
+
+A generic scatter matrix:
+```{r echo=FALSE, Bivariate_Plots_ggpairs}
+ggpairs(w[,2:14], axisLabels = "internal", title="Red Wines",
+        diagonal=list(continuous="density"))
+```
+
+A correlogram follows:
+```{r echo=FALSE, Bivariate_Plots_corrgram}
+corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
+         diag.panel=panel.density)
+```
+
+Exploring quality:
+
+```{r echo=FALSE, Bivariate_Plots_quality}
+ggplot(aes(x=quality,y=alcohol), data=w) + geom_line(stat="summary", fun.y=mean)
 
 ```
 
@@ -279,11 +372,37 @@ The *output* variable is the factor **quality** having the following ordinal sca
 
 ### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
 
+We see a very clear trend of increasing sensory quality with higher alcohol content. Amazingly, a similar trend is seen for the *sulphates*. *Volatile acidity* correlates negatively with quality, which was expected, given the unpleasant taste of the acetic acid. *Citric acid* on the other hand has a positive correlation, which is also not surprising, giving its "freshness" sensory effect. The other variables--*volatile acidity*, *SO~2~* contents, *residual sugar* have almost undetectable effect on the quality perception.
+
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+The correlogram shows pretty strong **positive correlation** (blue color) between:
+* *fixed acidity* and *citric acid* (cor=`r cor(w$fixed.acidity, w$citric.acid)`)---not surprising, since the amount of citric acid is already included in the measurement of the total "good" acids content.
+* *fixed acidity* and *density* (cor=`r cor(w$fixed.acidity, w$density)`)---this is due to the fact that the three main acids in wine (citric, malic and tartaric) have higher density than water (1.67, 1.61 and 1.79 g/cm^3^), therefore their presence increases the overall density of the wine.
+* The two *SO~2~* measurements (cor=`r cor(w$free.sulfur.dioxide, w$total.sulfur.dioxide)`)---normal, since one of them is included also in the other one
+* *Residual sugar* and *density* (cor=`r cor(w$residual.sugar, w$density)`)---as sugar is heavier than water (1.587 Kg/L vs. 1.000 kg/L), its presence tends to increase the overall density of the wine 
+
+Strong **negative correlation** (red color) was found between:
+* *Fixed acidity* and *pH* (cor=`r cor(w$fixed.acidity, w$pH)`)---as expected, since higher acidity manifests itself in lower pH
+* The same for *citric acid* and *pH* (cor=`r cor(w$citric.acid, w$pH)`)
+* *Density* and *alcohol* content (cor=`r cor(w$density, w$alcohol)`)---since alcohol has lower specific density than water (0.780 kg/L comapred to 1.000 kg/L), its presence tends to reduce the overall density (all other factors being equal)
+
+Somewhat unexpected is the positive correlation seen for "volatile acidity" (acetic acid) and pH (normally all acids cause lower pH). This can be due to the following phenomenon [see here](http://www.aromadictionary.com/articles/volatileacidity_article.html): The "acetobacter aceti" bacteria responsible for the vinegar fermentation and the production of acetic acid thrive in wines with lower fixed acidity and SO~2~ levels. Therefore, wines with higher volatile acidity will tend to have lower fixed acidity (what we see in the negative correlation between fixed/citric and volatile acidity). This lower fixed acidity probably is not offset by the higher content of acid acidity, and therefore the pH tends to rise. Effects of "normal" and "unexpected" acidities in shown in the diagrams below.
+
+```{r echo=FALSE, Bivariate_Plots_acidityPH}
+g2 <- ggplot(aes(x=volatile.acidity, y=pH), data=w) + geom_point(alpha=0.5) +
+            stat_smooth() + annotate("text", label="Unexpected", x=1.2, y=4)
+g1 <- ggplot(aes(x=fixed.acidity, y=pH), data=w) + geom_point(alpha=0.5) + 
+            stat_smooth() + annotate("text", label="Expected", x=12, y=4)
+
+grid.arrange(g1, g2, ncol=2, top="Expected vs. unexpected effect of acidity on the pH")
+
+```
+
 
 ### What was the strongest relationship you found?
 
-
+The output variable *Quality* 
 
 
 # Multivariate Plots Section
@@ -330,3 +449,5 @@ The *output* variable is the factor **quality** having the following ordinal sca
 ------
 
 # Reflection
+
+Unfortunately the dataset does not include any measurements of *tannin* content; yet tannins (the natural polyphenols giving the astringent taste of wine) are very important for the sensory perception of wines.
