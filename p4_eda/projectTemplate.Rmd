@@ -90,7 +90,7 @@ plotVar <- function(v,d) {
 
   q2 <- qplot(data=d, x=v, geom="density", xlab=substitute(v)[3]) + geom_rug()
 
-  q3 <- qplot(" ", data=d, y=v, geom="boxplot", ylab=substitute(v)[3])
+  q3 <- qplot(0, data=d, y=v, geom="boxplot", ylab=substitute(v)[3])
 
   grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
 }
@@ -363,7 +363,7 @@ corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
 
 Exploring quality:
 
-```{r echo=FALSE, Bivariate_Plots_quality}
+```{r echo=FALSE, Bivariate_Plots_quality_cond}
 
 plotStat <- function(x) {
   yname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
@@ -383,8 +383,14 @@ q4 <- plotStat(w$citric.acid)
 q5 <- plotStat(w$sulphates)
 q6 <- plotStat(w$volatile.acidity)
 q7 <- plotStat(w$fixed.acidity)
-grid.arrange(q1,q2,q3,q4,q5,q6,q7, ncol=2, 
-             heights=unit(0.5, "npc"))
+grid.arrange(q1,q2,q3,q4,q5,q6,q7, ncol=2)
+```
+
+```{r echo=FALSE, Bivariate_Plots_quality_cond}
+
+ggplot(aes(x=quality, y=density), data=w) + geom_boxplot()
+ggplot(aes(x=quality, y=pH), data=w) + geom_boxplot()
+
 ```
 
 # Bivariate Analysis
@@ -421,14 +427,42 @@ grid.arrange(g1, g2, ncol=2, top="Expected vs. unexpected effect of acidity on t
 
 ### What was the strongest relationship you found?
 
-Below is shown a table with the correlations of quality to the other variables.
-
-The output variable *Quality* 
 
 
 # Multivariate Plots Section
 
 ```{r echo=FALSE, Multivariate_Plots}
+plotDensity <- function(x) {
+  xname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
+  ggplot(aes(x=x, fill=quality), data=w) + 
+		geom_density(alpha=0.4, color="black") + 
+		scale_fill_brewer(type="qual") + 
+		geom_vline(xintercept = median(x)) + 
+		xlab(xname)
+}
+
+# Code from: https://github.com/hadley/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs
+grid_arrange_shared_legend <- function(...) {
+    plots <- list(...)
+    g <- ggplotGrob(plots[[1]] + theme(legend.position="right"))$grobs
+    legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+    width <- sum(legend$width)
+    grid.arrange(
+        do.call(arrangeGrob, lapply(plots, function(x)
+            x + theme(legend.position="none"))),
+        legend,
+        ncol = 2,
+        widths = grid::unit.c(unit(1, "npc") - width, width))
+}
+
+
+
+p1 <- plotDensity(w$pH)
+p2 <- plotDensity(w$citric.acid)
+p3 <- plotDensity(w$volatile.acid)
+p4 <- plotDensity(w$sulphates.acid)
+
+grid_arrange_shared_legend(p1,p2,p3,p4)
 
 ```
 
@@ -439,6 +473,14 @@ The output variable *Quality*
 ### Were there any interesting or surprising interactions between features?
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+library(memisc)
+m1 <- lm(as.numeric(quality) ~ pH, data=w)
+m2 <- update(m1, . ~ pH + alcohol, data=w)
+m3 <- update(m2, . ~ pH + alcohol + volatile.acidity, data=w)
+m4 <- update(m3, . ~ pH + alcohol + volatile.acidity + citric.acid, data=w)
+mmtable(m1,m2,m3,m4)
+plot(m4)
 
 ------
 
