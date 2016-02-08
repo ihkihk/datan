@@ -364,8 +364,25 @@ corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
 Exploring quality:
 
 ```{r echo=FALSE, Bivariate_Plots_quality}
-ggplot(aes(x=quality,y=alcohol), data=w) + geom_line(stat="summary", fun.y=mean)
 
+plotStat <- function(x) {
+  yname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
+  yname <- paste("median(", yname, ")", sep="")
+  summary.func <- median
+  ggplot(aes(x=as.numeric(quality), y=x), data=w) +
+        geom_line(stat="summary", fun.y=summary.func) + 
+        geom_point(stat="summary", fun.y=summary.func) + 
+        ylab(yname) + 
+        xlab("quality")
+}
+
+q1 <- plotStat(w$alcohol)
+q2 <- plotStat(w$residual.sugar)
+q3 <- plotStat(w$pH)
+q4 <- plotStat(w$citric.acid)
+q5 <- plotStat(w$sulphates)
+q6 <- plotStat(w$volatile.acidity)
+grid.arrange(q1,q2,q3,q4,q5,q6, ncol=2)
 ```
 
 # Bivariate Analysis
@@ -401,6 +418,8 @@ grid.arrange(g1, g2, ncol=2, top="Expected vs. unexpected effect of acidity on t
 
 
 ### What was the strongest relationship you found?
+
+Below is shown a table with the correlations of quality to the other variables.
 
 The output variable *Quality* 
 
@@ -450,4 +469,9 @@ The output variable *Quality*
 
 # Reflection
 
+Finding a way to predict the sensory quality of wines based on their physicochemical properties can fullfil a dream of winemakers and oenologists.
+
+We can go even further and imagine a model that can predict the type of the wine from the chemical measurements; or the climatic quality of the vintage year, for example.
+
 Unfortunately the dataset does not include any measurements of *tannin* content; yet tannins (the natural polyphenols giving the astringent taste of wine) are very important for the sensory perception of wines.
+
