@@ -29,6 +29,7 @@ library(gridExtra)
 library(dplyr)
 library(GGally)
 library(corrgram)
+library(car) # for powerTransform
 ```
 
 # Abstract
@@ -85,12 +86,16 @@ In this section we perform initials statistical and graphical analysis of the va
 ```{r echo=FALSE, Uniplot_fixed_acidity}
 
 plotVar <- function(v,d) {
-  q1 <- qplot(data=d, x=v, fill=I("blue"), color=I("black"), alpha=0.5, xlab=substitute(v)[3]) + 
+  name <- deparse(substitute(v))
+  q1 <- qplot(data=d, x=v, fill=I("blue"), color=I("black"), alpha=0.5, xlab=name) + 
         theme(legend.position="none")
 
-  q2 <- qplot(data=d, x=v, geom="density", xlab=substitute(v)[3]) + geom_rug()
+  q2 <- qplot(data=d, x=v, geom="density", xlab=name, fill=I("blue"), alpha=0.5) + 
+		geom_rug() + 
+        theme(legend.position="none")
 
-  q3 <- qplot(0, data=d, y=v, geom="boxplot", ylab=substitute(v)[3])
+  q3 <- qplot(0, data=d, y=v, geom="boxplot", ylab=name) + 
+		theme(axis.title.x=element_blank())
 
   grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
 }
@@ -351,7 +356,7 @@ shapiro.test(citracid)
 
 A generic scatter matrix:
 ```{r echo=FALSE, Bivariate_Plots_ggpairs}
-ggpairs(w[,2:14], axisLabels = "internal", title="Red Wines",
+ggpairs(w[,2:13], axisLabels = "internal", title="Red Wines",
         diagonal=list(continuous="density"))
 ```
 
@@ -386,7 +391,7 @@ q7 <- plotStat(w$fixed.acidity)
 grid.arrange(q1,q2,q3,q4,q5,q6,q7, ncol=2)
 ```
 
-```{r echo=FALSE, Bivariate_Plots_quality_cond}
+```{r echo=FALSE, Bivariate_Plots_quality_boxplots}
 
 ggplot(aes(x=quality, y=density), data=w) + geom_boxplot()
 ggplot(aes(x=quality, y=pH), data=w) + geom_boxplot()
@@ -437,7 +442,6 @@ plotDensity <- function(x) {
   ggplot(aes(x=x, fill=quality), data=w) + 
 		geom_density(alpha=0.4, color="black") + 
 		scale_fill_brewer(type="qual") + 
-		geom_vline(xintercept = median(x)) + 
 		xlab(xname)
 }
 
