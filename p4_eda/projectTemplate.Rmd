@@ -382,7 +382,9 @@ q3 <- plotStat(w$pH)
 q4 <- plotStat(w$citric.acid)
 q5 <- plotStat(w$sulphates)
 q6 <- plotStat(w$volatile.acidity)
-grid.arrange(q1,q2,q3,q4,q5,q6, ncol=2)
+q7 <- plotStat(w$fixed.acidity)
+grid.arrange(q1,q2,q3,q4,q5,q6,q7, ncol=2, 
+             heights=unit(0.5, "npc"))
 ```
 
 # Bivariate Analysis
