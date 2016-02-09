@@ -30,6 +30,7 @@ library(dplyr)
 library(GGally)
 library(corrgram)
 library(car) # for powerTransform
+library(MASS) # boxcox
 ```
 
 # Abstract
@@ -97,7 +98,8 @@ plotVar <- function(v,d) {
   q3 <- qplot(0, data=d, y=v, geom="boxplot", ylab=name) + 
 		theme(axis.title.x=element_blank())
 
-  grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
+  suppressMessages(grid.arrange(q1, q2, q3, 
+                                layout_matrix=matrix(c(1,2,3,3), 2, 2)))
 }
 
 summary(w$fixed.acidity)
@@ -168,7 +170,7 @@ q1 <- qplot(data=cleaned.citric.acid, x=citric.acid, binwidth=0.01,
 	  
 q2 <- qplot(data=cleaned.citric.acid, x=citric.acid, geom="density") + geom_rug()
 
-grid.arrange(q1, q2, nrow=2)
+suppressMessages(grid.arrange(q1, q2, nrow=2))
 ```
 
 This distribution appears **artificially** uniform towards the lower values (i.e. there is no gradual reduction of the frequency of the lower values). This can be probably explained with the fact that the winemakers usually add some amount of citric acid to give the wine a fresh (non-flat) body. Further confirmation for this is the presence of three very prominent peaks in the histogram (at 0.02, 0.24 and 0.49); especially the last two can signify that the citric amount has been artificially boosted to 0.25 or 0.50. If the citric acid amounts were due to a *natural process* (like fermentation, as is the case with the other acids), then its distribution would be more *bell-shaped* (the central limit theorem calls for normal distribution of the combined effect of many random processes.)
@@ -272,7 +274,8 @@ The *alcohol* content shows a significant right-skewedness (skewness = `r skewne
 
 ## Quality
 
-The *quality* variable is categorical, so we will plot it in a barplot
+The *quality* variable is categorical, so we will plot it in a barplot:
+
 ```{r echo=FALSE, Uniplot_quality}
 summary(w$quality)
 qplot(w$quality, color=I("black"), fill=I("orange"))
@@ -305,7 +308,7 @@ The *output* variable is the factor **quality** having the following ordinal sca
 
 ### What is/are the main feature(s) of interest in your dataset?
 
-Our interest lies in finding a relationship that can predict the wine *quality* based on the various *chemical* measurements. It is not very easy to make apriori assumptions as to which chemical variables have a significant effect on the sensory perception of the wine. Still, what comes first to mind is the *alcohol* content and the *pH*, both being aspects that are very easily perceived. Of the other chemical substances, the measured *chloride* contents is mostly below the detection threshold. Likewise, *sulphur dioxide (aka sulfites)* have neither smell, nor taste, so it is not very likely that they can directly determine the tasting assessment. On the other hand, the *sulphates* can have very different tastes depending on their concentration, as shown on the diagram below.
+We're interested in finding a relationship that can predict the wine *quality* based on the various *chemical* measurements. It is not very easy to make apriori assumptions as to which chemical variables have a significant effect on the sensory perception of the wine. Still, what comes first to mind is the *alcohol* content and the *pH*, both being aspects that are very easily perceived. Of the other chemical substances, the measured *chloride* contents is mostly below the detection threshold. Likewise, *sulphur dioxide (aka sulfites)* have neither smell, nor taste, so it is not very likely that they can directly determine the tasting assessment. On the other hand, the *sulphates* can have very different tastes depending on their concentration, as shown on the diagram below.
 
 ![](k2so4_taste.png)
 
@@ -319,19 +322,36 @@ A new categorical variable `sweetness` was created to classify each wine accordi
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
-Most of the distributions are right-skewed. This is due to measuring quantities that cannot be below a given limit (e.g. due to some legislation). ?????????
-```{r echo=FALSE, Univariate_xform2normality_alcohol}
-# Normal probability plot for original variable
-qqnorm(w$alcohol); qqline(w$alcohol)			
-# Illustration of Log-Likelihood profile
-boxcox(w$alcohol~1)	            
-# Estimaton of Box-Cox lambda
-p<-powerTransform(w$alcohol)    
-# Box-Cox transformation
-y<-bcPower(w$alcohol,p$lambda)	
-# Normal probability plot for transformed variable
-qqnorm(y)
+There are two rather normal distributions: *pH* and *density*.
+
+Most of the distributions, however, are **right-skewed**. This normally happens when we measure quantities that cannot be below a given limit (e.g. due to some law requirements, as is the case with the alcohol contents). Such distributions can usually benefit from a **log** transformation, as this increases their normality. An example is given below for the *total SO~2~* variable.
+
+Before the *log* transformation, the *total SO~2~* variable has a normality statistics, as determined by the Shapiro-Wilk test, equal to `r shapiro.test(w$total.sulfur.dioxide)$statistic`. After the *log* transformation, Shapiro-Wilk gives `r shapiro.test(log10(w$total.sulfur.dioxide))$statistic`, i.e. the transformed variable has more normal distribution. The histograms before-and-after below confirm this:
+
+```{r echo=FALSE, Univariate_xform2normality_SO2}
+# Shapiro-Wilk before log xform
+sw1 = round(shapiro.test(w$total.sulfur.dioxide)$statistic, digits=2)
+
+# Shapiro-Wilk after log xform
+sw2 = round(shapiro.test(log10(w$total.sulfur.dioxide))$statistic, digits=2)
+
+g1 <- ggplot(aes(x=w$total.sulfur.dioxide), data=w) +
+  geom_histogram(fill="blue", color="black", alpha=0.5) + 
+  ggtitle(SO[2] ~ "before log xform") +
+  annotate("label", label=paste0("Shapiro-Wilk = ", sw1), x=200, y=300)
+
+g2 <- ggplot(aes(x=w$total.sulfur.dioxide), data=w) +
+  geom_histogram(fill="blue", color="black", alpha=0.5) +
+  scale_x_log10() + 
+  ggtitle(SO[2] ~ "after log xform") +
+  annotate("label", label=paste0("Shapiro-Wilk = ", sw2), x=130, y=120)
+
+suppressMessages(grid.arrange(g1, g2, ncol=2))
+
 ```
+
+
+The most unusual distributions is the one of the *citric acid*. 
 
 ```{r echo=FALSE, Univariate_xform2normality_citricacid}
 # Normal probability plot for original variable
@@ -354,41 +374,50 @@ shapiro.test(citracid)
 
 # Bivariate Plots Section
 
-A generic scatter matrix:
-```{r echo=FALSE, Bivariate_Plots_ggpairs}
-ggpairs(w[,2:13], axisLabels = "internal", title="Red Wines",
-        diagonal=list(continuous="density"))
+To achieve a quick overview of all bi-variate relations, we'll produce a scatterplot matrix:
+
+```{r echo=FALSE, message=FALSE, Bivariate_Plots_ggpairs}
+
+suppressMessages(
+ggpairs(w[, 1:12], axisLabels = "internal", title="Red Wines",
+        diag=list(continuous="density"), showStrips = NULL))
+
 ```
 
-A correlogram follows:
-```{r echo=FALSE, Bivariate_Plots_corrgram}
-corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
-         diag.panel=panel.density)
-```
 
-Exploring quality:
+From the boxplots in this matrix we easily see that our variable of interest (*quality*) has very pronounced **positive correlation** to *citric acid*, *sulphates* and *alcohol*. It has **negative correlation** to *volatile acidity*, *chlorides*, *density* and *pH*. Its relation to the rest of the input variables seems less clearly defined. 
+
+A better view of the dependence of *quality* on the input variables can be obtained from the figures below. They plot conditionally the median of each input variable at each level of *quality*:
 
 ```{r echo=FALSE, Bivariate_Plots_quality_cond}
 
 plotStat <- function(x) {
+  # Clean the name of the input variable
   yname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
-  yname <- paste("median(", yname, ")", sep="")
+  yname <- paste0("median of\n", yname)
+  
   summary.func <- median
+  
   ggplot(aes(x=as.numeric(quality), y=x), data=w) +
         geom_line(stat="summary", fun.y=summary.func) + 
         geom_point(stat="summary", fun.y=summary.func) + 
         ylab(yname) + 
-        xlab("quality")
+        xlab("quality") + 
+        #geom_boxplot(aes(x=quality), outlier.shape = NA) + 
+        scale_x_discrete(labels=levels(w$quality))
 }
 
 q1 <- plotStat(w$alcohol)
-q2 <- plotStat(w$residual.sugar)
-q3 <- plotStat(w$pH)
-q4 <- plotStat(w$citric.acid)
-q5 <- plotStat(w$sulphates)
-q6 <- plotStat(w$volatile.acidity)
-q7 <- plotStat(w$fixed.acidity)
-grid.arrange(q1,q2,q3,q4,q5,q6,q7, ncol=2)
+q2 <- plotStat(w$citric.acid)
+q3 <- plotStat(w$sulphates)
+q4 <- plotStat(w$pH)
+q5 <- plotStat(w$volatile.acidity)
+q6 <- plotStat(w$density)
+q7 <- plotStat(w$chlorides)
+q8 <- plotStat(w$total.sulfur.dioxide)
+q9 <- plotStat(w$residual.sugar)
+q10 <- plotStat(w$fixed.acidity)
+grid.arrange(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10, ncol=2)
 ```
 
 ```{r echo=FALSE, Bivariate_Plots_quality_boxplots}
@@ -398,32 +427,67 @@ ggplot(aes(x=quality, y=pH), data=w) + geom_boxplot()
 
 ```
 
+For an easier identification of the remaining significant correlations, a correlogram can help:
+
+```{r echo=FALSE, Bivariate_Plots_corrgram}
+corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
+         diag.panel=panel.density)
+```
+
 # Bivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
 
-We see a very clear trend of increasing sensory quality with higher alcohol content. Amazingly, a similar trend is seen for the *sulphates*. *Volatile acidity* correlates negatively with quality, which was expected, given the unpleasant taste of the acetic acid. *Citric acid* on the other hand has a positive correlation, which is also not surprising, giving its "freshness" sensory effect. The other variables--*volatile acidity*, *SO~2~* contents, *residual sugar* have almost undetectable effect on the quality perception.
+We see a very clear trend of increasing sensory quality with higher *alcohol* content. Amazingly, a similar trend is seen for the *sulphates*. *Volatile acidity* correlates negatively with quality, which was expected, given the unpleasant taste of the acetic acid. *Citric acid* on the other hand has a positive correlation, which is also not surprising, giving its "freshness" sensory effect. An interesting observation is that an increase in the *chlorides* leads to quality deterioration, even if the amounts are below the taste thresholds. The other variables--*fixed acidity*, *SO~2~* contents, and *residual sugar* do not have a clear relationship with the quality perception.
 
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
 
 The correlogram shows pretty strong **positive correlation** (blue color) between:
-* *fixed acidity* and *citric acid* (cor=`r cor(w$fixed.acidity, w$citric.acid)`)---not surprising, since the amount of citric acid is already included in the measurement of the total "good" acids content.
-* *fixed acidity* and *density* (cor=`r cor(w$fixed.acidity, w$density)`)---this is due to the fact that the three main acids in wine (citric, malic and tartaric) have higher density than water (1.67, 1.61 and 1.79 g/cm^3^), therefore their presence increases the overall density of the wine.
-* The two *SO~2~* measurements (cor=`r cor(w$free.sulfur.dioxide, w$total.sulfur.dioxide)`)---normal, since one of them is included also in the other one
-* *Residual sugar* and *density* (cor=`r cor(w$residual.sugar, w$density)`)---as sugar is heavier than water (1.587 Kg/L vs. 1.000 kg/L), its presence tends to increase the overall density of the wine 
+
+* *Fixed acidity* and *citric acid* (cor=`r cor(w$fixed.acidity, w$citric.acid)`)---not surprising, since the amount of citric acid is already included in the measurement of the total "good" acids content.
+
+* *Fixed acidity* and *density* (cor=`r cor(w$fixed.acidity, w$density)`)---this is due to the fact that the three main acids in wine (citric, malic and tartaric) have higher density than water (1.67, 1.61 and 1.79 g/cm^3^), therefore their presence increases the overall density of the wine.
+
+* The two *SO~2~* measurements (cor=`r cor(w$free.sulfur.dioxide, w$total.sulfur.dioxide)`)---normal, since the free SO~2~ is included also in the total measurement.
+
+* *Residual sugar* and *density* (cor=`r cor(w$residual.sugar, w$density)`)---as sugar is heavier than water (1.587 Kg/L vs. 1.000 kg/L), its presence tends to increase the overall density of the wine.
 
 Strong **negative correlation** (red color) was found between:
-* *Fixed acidity* and *pH* (cor=`r cor(w$fixed.acidity, w$pH)`)---as expected, since higher acidity manifests itself in lower pH
-* The same for *citric acid* and *pH* (cor=`r cor(w$citric.acid, w$pH)`)
-* *Density* and *alcohol* content (cor=`r cor(w$density, w$alcohol)`)---since alcohol has lower specific density than water (0.780 kg/L comapred to 1.000 kg/L), its presence tends to reduce the overall density (all other factors being equal)
 
-Somewhat unexpected is the positive correlation seen for "volatile acidity" (acetic acid) and pH (normally all acids cause lower pH). This can be due to the following phenomenon [see here](http://www.aromadictionary.com/articles/volatileacidity_article.html): The "acetobacter aceti" bacteria responsible for the vinegar fermentation and the production of acetic acid thrive in wines with lower fixed acidity and SO~2~ levels. Therefore, wines with higher volatile acidity will tend to have lower fixed acidity (what we see in the negative correlation between fixed/citric and volatile acidity). This lower fixed acidity probably is not offset by the higher content of acid acidity, and therefore the pH tends to rise. Effects of "normal" and "unexpected" acidities in shown in the diagrams below.
+* *Fixed acidity* and *pH* (cor=`r cor(w$fixed.acidity, w$pH)`)---as expected, since higher acidity manifests itself in lower pH.
+
+* The same for *citric acid* and *pH* (cor=`r cor(w$citric.acid, w$pH)`).
+
+* *Density* and *alcohol* content (cor=`r cor(w$density, w$alcohol)`)---since alcohol has lower specific density than water (0.780 kg/L compared to 1.000 kg/L), its presence tends to reduce the overall density (all other factors being equal).
+
+Somewhat unexpected is the positive correlation seen for *volatile acidity* (acetic acid) and *pH* (normally all acids cause lower pH). This can be due to the following phenomenon ([see here](http://www.aromadictionary.com/articles/volatileacidity_article.html)): The "acetobacter aceti" bacteria responsible for the vinegar fermentation and the production of acetic acid thrives in wines with lower fixed acidity and SO~2~ levels. Therefore, wines with higher volatile acidity will tend to have lower fixed acidity (as we see in the negative correlation between fixed/citric and volatile acidity below). 
+
+```{r echo=FALSE, Bivariate_Plots_fixedvolac}
+
+# Limit a bit the data
+va.p95 <- quantile(w$volatile.acidity, 0.95)
+fa.p95 <- quantile(w$fixed.acidity, 0.95)
+
+ggplot(aes(x=volatile.acidity, y=fixed.acidity), 
+       data=subset(w, volatile.acidity < va.p95 & fixed.acidity < fa.p95)) + 
+  geom_point() + geom_smooth(method="lm") +
+  ggtitle("Negative correlation between fixed and volatile acidity")
+
+```
+
+This lower fixed acidity probably is not offset by the higher content of volatile acidity (acetic acid is a very weak acid), and therefore the pH tends to rise. This acidity-pH relationship is illustrated in the diagrams below:
 
 ```{r echo=FALSE, Bivariate_Plots_acidityPH}
-g2 <- ggplot(aes(x=volatile.acidity, y=pH), data=w) + geom_point(alpha=0.5) +
-            stat_smooth() + annotate("text", label="Unexpected", x=1.2, y=4)
-g1 <- ggplot(aes(x=fixed.acidity, y=pH), data=w) + geom_point(alpha=0.5) + 
-            stat_smooth() + annotate("text", label="Expected", x=12, y=4)
+
+g1 <- ggplot(aes(x=fixed.acidity, y=pH), data=w) + 
+            geom_point(alpha=0.5) + 
+            stat_smooth() + 
+            annotate("text", label="Expected", x=12, y=4)
+
+g2 <- ggplot(aes(x=volatile.acidity, y=pH), data=w) + 
+            geom_point(alpha=0.5) +
+            stat_smooth() + 
+            annotate("text", label="Unexpected", x=1.2, y=4)
 
 grid.arrange(g1, g2, ncol=2, top="Expected vs. unexpected effect of acidity on the pH")
 
@@ -432,13 +496,16 @@ grid.arrange(g1, g2, ncol=2, top="Expected vs. unexpected effect of acidity on t
 
 ### What was the strongest relationship you found?
 
+Visually judging from the plots above, the strongest relationship could be the one between the amount of *citric acid* and *quality*.
 
 
 # Multivariate Plots Section
 
 ```{r echo=FALSE, Multivariate_Plots}
 plotDensity <- function(x) {
+  # Extract the name of the variable
   xname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
+  
   ggplot(aes(x=x, fill=quality), data=w) + 
 		geom_density(alpha=0.4, color="black") + 
 		scale_fill_brewer(type="qual") + 
@@ -464,7 +531,7 @@ grid_arrange_shared_legend <- function(...) {
 p1 <- plotDensity(w$pH)
 p2 <- plotDensity(w$citric.acid)
 p3 <- plotDensity(w$volatile.acid)
-p4 <- plotDensity(w$sulphates.acid)
+p4 <- plotDensity(w$sulphates)
 
 grid_arrange_shared_legend(p1,p2,p3,p4)
 
@@ -480,9 +547,9 @@ grid_arrange_shared_legend(p1,p2,p3,p4)
 
 library(memisc)
 m1 <- lm(as.numeric(quality) ~ pH, data=w)
-m2 <- update(m1, . ~ pH + alcohol, data=w)
-m3 <- update(m2, . ~ pH + alcohol + volatile.acidity, data=w)
-m4 <- update(m3, . ~ pH + alcohol + volatile.acidity + citric.acid, data=w)
+m2 <- update(m1, . ~ pH + log10(alcohol), data=w)
+m3 <- update(m2, . ~ pH + log10(alcohol) + volatile.acidity, data=w)
+m4 <- update(m3, . ~ pH + log10(alcohol) + volatile.acidity + citric.acid, data=w)
 mmtable(m1,m2,m3,m4)
 plot(m4)
 
