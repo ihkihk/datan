@@ -7,7 +7,8 @@ output: html_document
 ========================================================
 
 [Report1](http://rstudio-pubs-static.s3.amazonaws.com/24803_abbae17a5e154b259f6f9225da6dade0.html)
-[Report2](https://www.minitab.com/en-us/Published-Articles/Wine-Tasting-by-Numbers--Using-Binary-Logistic-Regression-to-Reveal-the-Preferences-of-Experts/)
+[Report2](http://rstudio-pubs-static.s3.amazonaws.com/80458_5000e31f84df449099a872ccf40747b7.html)
+[Report3](https://www.minitab.com/en-us/Published-Articles/Wine-Tasting-by-Numbers--Using-Binary-Logistic-Regression-to-Reveal-the-Preferences-of-Experts/)
 [When a wine is salty, and why it shouldn?t be](http://wineoscope.com/2015/10/02/when-a-wine-is-salty-and-why-it-shouldnt-be/)
 [Chloride concentration in red wines: influence of terroir and grape type](http://www.scielo.br/scielo.php?pid=S0101-20612015000100095&script=sci_arttext)
 [Vinho Verde on Wikipedia](https://en.wikipedia.org/wiki/Vinho_Verde)
@@ -30,7 +31,7 @@ library(dplyr)
 library(GGally)
 library(corrgram)
 library(car) # for powerTransform
-library(MASS) # boxcox
+library(MASS) # boxcox and ologit (polr)
 ```
 
 # Abstract
@@ -544,6 +545,20 @@ grid_arrange_shared_legend(p1,p2,p3,p4)
 ### Were there any interesting or surprising interactions between features?
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+Since the output variable is categorical (and have an ordinal scale), we have to consider an **ordered logistic regression** (see [here](http://www.ats.ucla.edu/stat/r/dae/ologit.htm))approach to modeling the *quality* behavior. In other words we cannot use an method like "lm" or OLS (ordinary least squares) regression which operates on continuous predicted variable.
+
+We will use the `polr` command from the MASS package to estimate an ologit regression model. This command relies on the "proportional odds assumptions", i.e. it assumes the relationships between all pairs of outcome groups to be the same (in a robust study this is something to be tested, however it is far beyond the scope of the course).
+ 
+In choosing the predictor variables for the regression, it is important that they are not correlated. I.e. it is of no use feeding the model both with *total.sulfur.dioxide* and *free.sulfur.dioxide*. As the analyses above shown the *quality* output is considerably affected by *
+
+
+Akaike information criterion
+
+```{r echo=FALSE, Multivariate_ologit}
+m <- polr(quality ~ citric.acid + volatile.acidity + sulphates, data=w, Hess=T)
+
+````
 
 library(memisc)
 m1 <- lm(as.numeric(quality) ~ pH, data=w)
