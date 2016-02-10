@@ -550,23 +550,88 @@ Since the output variable is categorical (and have an ordinal scale), we have to
 
 We will use the `polr` command from the MASS package to estimate an ologit regression model. This command relies on the "proportional odds assumptions", i.e. it assumes the relationships between all pairs of outcome groups to be the same (in a robust study this is something to be tested, however it is far beyond the scope of the course).
  
-In choosing the predictor variables for the regression, it is important that they are not correlated. I.e. it is of no use feeding the model both with *total.sulfur.dioxide* and *free.sulfur.dioxide*. As the analyses above shown the *quality* output is considerably affected by *
+In choosing the predictor variables for the regression, it is important that they are not correlated. I.e. it is of no use feeding the model both with *total.sulfur.dioxide* and *free.sulfur.dioxide*. As the analyses above shown the *quality* output is considerably affected by predictors such as *citric.acid*, *volatile.acidity*, *sulphates*, and *alcohol*. We will create a number of **proportional odds* regression models, using different combinations of predictors, and will compare their predictive strengths.
 
-
-Akaike information criterion
+The models will try are the following:
+* quality ~ citric.acid
+* quality ~ citric.acid + volatile.acidity
+* quality ~ citric.acid + volatile.acidity + alcohol
+* quality ~ sqrt(citric.acid) + volatile.acidity + alcohol
+* quality ~ citric.acid + volatile.acidity + log10(alcohol)
+* quality ~ citric.acid + volatile.acidity + alcohol + sulphates
+* quality ~ citric.acid + volatile.acidity + log10(alcohol) + sulphates
+* quality ~ volatile.acidity + alcohol + sulphates
+* quality ~ alcohol + pH
+* quality ~ alcohol + pH + volatile.acidity
+* quality ~ log10(alcohol) + pH + log10(volatile.acidity)
 
 ```{r echo=FALSE, Multivariate_ologit}
-m <- polr(quality ~ citric.acid + volatile.acidity + sulphates, data=w, Hess=T)
 
-````
+# Define model formulas
+f <- c("quality ~ citric.acid",
+       "quality ~ citric.acid + volatile.acidity",
+       "quality ~ citric.acid + volatile.acidity + alcohol",
+       "quality ~ sqrt(citric.acid) + volatile.acidity + alcohol",
+       "quality ~ citric.acid + volatile.acidity + log10(alcohol)",
+       "quality ~ citric.acid + volatile.acidity + alcohol + sulphates",
+       "quality ~ citric.acid + volatile.acidity + log10(alcohol) + sulphates",
+       "quality ~ volatile.acidity + alcohol + sulphates",
+       "quality ~ alcohol + pH",
+       "quality ~ alcohol + pH + volatile.acidity",
+       "quality ~ log(alcohol) + pH + volatile.acidity",
+       "quality ~ log10(alcohol) + pH + log10(volatile.acidity)")
+        
+# This data.frame will contain the result of each model fitting
+models <- data.frame(formula=character(),
+                 aic=double(),
+                 predict.rate=double(),
+                 row.names = NULL,
+                 stringsAsFactors=FALSE)
+        
+# Fit and explore each model
+for (mf in f) {
+    # Fit the model
+    m <-  polr(mf, data=w, Hess=T)
+    # Run model prediction on the initial dataset
+    w.m <- cbind(w, predict(m, w, type = "probs"))
+    # Determined predicted quality based on model's odds predictions
+    w.m$predicted.quality <- apply(w.m, 1, function(x) which.max(x[c(13:18)])+2)
+    # Add a variable to the dataset saying if the predicted quality is a match
+    w.m <- mutate(w.m, match=predicted.quality==quality)
+    # Calculate the proportion of successful predictions
+    rate.m <- count(w.m[w.m$match==T,]) / count(w.m)
+    
+    # Append the current models' results to the results data.frame
+    models <- rbind(models, c(formula=mf, aic=extractAIC(m)[2], 
+                              predict.rate=rate.m*100))
+    models$formula <- as.character(models$formula)
+}
 
-library(memisc)
-m1 <- lm(as.numeric(quality) ~ pH, data=w)
-m2 <- update(m1, . ~ pH + log10(alcohol), data=w)
-m3 <- update(m2, . ~ pH + log10(alcohol) + volatile.acidity, data=w)
-m4 <- update(m3, . ~ pH + log10(alcohol) + volatile.acidity + citric.acid, data=w)
-mmtable(m1,m2,m3,m4)
-plot(m4)
+row.names(models) <- NULL # Reset the row index
+
+# Print the models results
+grid.table(models[order(models$predict.rate.n),])
+
+best_model <- models[models$predict.rate.n == max(models$predict.rate.n),]
+```
+
+The best model (i.e. the one having the best prediction rate) is:
+
+```{r, echo=FALSE, Models_best}
+best_model$formula
+```
+
+It also has a relatively low AIC (Akaike Information Criterion), meaning that its "difficulty-to-prediction" ratio is one of the best among the tried models.
+
+The coefficients and other fitting statistics of this model are:
+
+```{r, echo=FALSE}
+m <-  polr(best_model$formula, data=w, Hess=T)
+summary(m)
+
+exp(coef(m))
+```
+
 
 ------
 
