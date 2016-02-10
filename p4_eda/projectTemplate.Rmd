@@ -30,7 +30,7 @@ library(gridExtra)
 library(dplyr)
 library(GGally)
 library(corrgram)
-library(car) # for powerTransform
+library(car) # for powerTransform and bcPower
 library(MASS) # boxcox and ologit (polr)
 ```
 
@@ -352,25 +352,44 @@ suppressMessages(grid.arrange(g1, g2, ncol=2))
 ```
 
 
-The most unusual distributions is the one of the *citric acid*. 
+The most unusual distributions is the one of the *citric acid*. For the sake of education, an attempt is made to bring to normalization the distribution of the *citric acid*. One way to do this is to use the Box-Cox transformation, which is a type of *Power Transform* (as discussed [here](https://en.wikipedia.org/wiki/Power_transform) used frequently in many areas involving statistical analysis).
 
-```{r echo=FALSE, Univariate_xform2normality_citricacid}
+First, we plot the Q-Q normality plot of the original *citric acid* variable. It shows a rather non-normal distribution.
+
+```{r echo=FALSE, Univariate_citricacid_qq}
 # Normal probability plot for original variable
-citracid <- subset(w, citric.acid!=0)$citric.acid
-qqnorm(w$citric.acid); qqline(w$citric.acid)			
-# Illustration of Log-Likelihood profile
-boxcox(citracid~1)	            
-# Estimaton of Box-Cox lambda
-p<-powerTransform(citracid)    
-# Box-Cox transformation
-y<-bcPower(citracid,p$lambda)	
-# Normal probability plot for transformed variable
-qqnorm(y); qqline(y)
-hist(y)
-shapiro.test(y)
-hist(citracid)
-shapiro.test(citracid)
+citric.acid.cleaned <- subset(w, citric.acid!=0)$citric.acid
+qqnorm(citric.acid.cleaned); qqline(citric.acid.cleaned)
 ```
+
+Then we perform the Box-Cox transformation with a plot of the Log-Likelihood profile
+
+```{r echo=FALSE, Univariate_citricacid_boxcox}
+# Illustration of Log-Likelihood profile
+boxcox(citric.acid.cleaned ~ 1)	            
+
+# Estimaton of Box-Cox lambda
+pt <- powerTransform(citric.acid.cleaned)    
+
+# Box-Cox transformation
+citric.acid.transformed <- bcPower(citric.acid.cleaned, pt$lambda)	
+```
+
+Finally we plot the Q-Q plot for the transformed variable, as well a superposition of the original and transformed densities.
+
+```{r echo=FALSE, Univariate_citricacid_plots}
+
+# Normal probability plot for transformed variable
+qqnorm(citric.acid.transformed); qqline(citric.acid.transformed)
+
+ca <- data.frame(cac=citric.acid.cleaned, cat=citric.acid.transformed)
+ggplot(data=ca) + geom_density(aes(x=cac), color = "blue") + 
+                  geom_density(aes(x=cat), color="red") + 
+				  xlab("Box-Cox transformed (red) vs. original (blue) distribution of citric.acid")
+
+```
+
+The Box-Cox transformation in this case, although didactic, does not seem to produce a very convincing result...
 
 
 # Bivariate Plots Section
@@ -502,7 +521,11 @@ Visually judging from the plots above, the strongest relationship could be the o
 
 # Multivariate Plots Section
 
+An interesting experiment is to superimpose the density plots of the different variables that can be assumed to be predictors, conditional to the *quality* factor.
+
 ```{r echo=FALSE, Multivariate_Plots}
+
+# Plot densities of an variable conditioned by the "quality" factor
 plotDensity <- function(x) {
   # Extract the name of the variable
   xname <- strsplit(deparse(substitute(x)),"$",fixed=TRUE)[[1]][2]
@@ -513,6 +536,7 @@ plotDensity <- function(x) {
 		xlab(xname)
 }
 
+# Arrange several similar plots in a grid, using a common legend
 # Code from: https://github.com/hadley/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs
 grid_arrange_shared_legend <- function(...) {
     plots <- list(...)
@@ -529,28 +553,73 @@ grid_arrange_shared_legend <- function(...) {
 
 
 
-p1 <- plotDensity(w$pH)
+p1 <- plotDensity(w$alcohol)
 p2 <- plotDensity(w$citric.acid)
-p3 <- plotDensity(w$volatile.acid)
+p3 <- plotDensity(w$volatile.acidity)
 p4 <- plotDensity(w$sulphates)
 
 grid_arrange_shared_legend(p1,p2,p3,p4)
 
 ```
 
+Another possibility is to visually explore a given chemical measurement across both quality and sweetness levels. This can be justified since the sweetness is one of the first factors by which people evaluate wines.
+
+```{r echo=FALSE, Multivariate_sweetness_quality_facets}
+ggplot(w, aes(x = 0, y = pH)) +
+  geom_boxplot(size = .75) +
+  geom_jitter(alpha = .2, color="blue") +
+  facet_grid(sweetness ~ quality) +
+  theme(axis.text.x = element_blank(), 
+        axis.title.x=element_blank(), 
+		axis.ticks.x=element_blank())
+		
+ggplot(w, aes(x = 0, y = alcohol)) +
+  geom_boxplot(size = .75) +
+  geom_jitter(alpha = .2, color="blue") +
+  facet_grid(sweetness ~ quality) +
+  theme(axis.text.x = element_blank(), 
+        axis.title.x=element_blank(), 
+		axis.ticks.x=element_blank())
+```
+
+One issue with these plots is that there are very few observations including "medium" wines--it would be best probably to completely ignore the visualizations for this factor level.
+
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
 
+The MV plots confirmed the already observed relationships of some variables to *quality*. In this case we see clearly from the density plots that the distribution modes of these variables change monotonously (increase for *citric.acid*, *alcohol* and *sulphates*; decrease for *volatile.acidity*) across the increasing levels of *quality*.
+
+
 ### Were there any interesting or surprising interactions between features?
+
+From the density plots we also see that the variances of some of the variables (like *citric.acid* and *sulphates*) at different *quality* levels are very similar. For others (*volatile.acidity* and *alcohol*) they are different, and interesting enough, they differ in opposite ways---*alcohol* variance increases with quality level, while *volatile.acidity*'s variance decreases. 
+
+What this means is that the lower-quality wines can have very different amounts of acetic acid; meaning in turn that there is another more potent factor that comes into play and downgrades the wine. One such factor could be the amount alcohol--if it is low, then the wine goes to the bad side, even if there is little acetic acid in it. 
+
+On the reverse, high quality wines can have very different values of alcohol content. This could be due to another factor that keeps the quality high despite the varying alcohol content. Maybe this is a low amount of acetic acid.
+
+To test this hypothesized correlation between alcohol and acetic acid levels we can plot their scatterplot faceted by the quality level.
+
+```{r echo=FALSE, Multivariate_acidity_alcohol_scatterplot}
+
+ggplot(data=w, aes(x=volatile.acidity, y=alcohol)) + 
+	geom_point() + geom_smooth(method=lm, color="red") + 
+	facet_wrap(~quality)
+
+```
+
+Indeed we see that there is significant correlation between alcohol and acetic acid content at the two quality extremes. So, the "very bad" quality wines steadily feature a low alcohol content; similarly, the "excellent" wines mostly have low volatile acidity.
+
+
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
 
 Since the output variable is categorical (and have an ordinal scale), we have to consider an **ordered logistic regression** (see [here](http://www.ats.ucla.edu/stat/r/dae/ologit.htm))approach to modeling the *quality* behavior. In other words we cannot use an method like "lm" or OLS (ordinary least squares) regression which operates on continuous predicted variable.
 
-We will use the `polr` command from the MASS package to estimate an ologit regression model. This command relies on the "proportional odds assumptions", i.e. it assumes the relationships between all pairs of outcome groups to be the same (in a robust study this is something to be tested, however it is far beyond the scope of the course).
+We will use the `polr` command from the MASS package to estimate an *ologit* regression model. This command relies on the "proportional odds assumptions", i.e. it assumes the relationships between all pairs of outcome groups to be the same (in a robust study this is something to be tested, however it is far beyond the scope of the course).
  
-In choosing the predictor variables for the regression, it is important that they are not correlated. I.e. it is of no use feeding the model both with *total.sulfur.dioxide* and *free.sulfur.dioxide*. As the analyses above shown the *quality* output is considerably affected by predictors such as *citric.acid*, *volatile.acidity*, *sulphates*, and *alcohol*. We will create a number of **proportional odds* regression models, using different combinations of predictors, and will compare their predictive strengths.
+In choosing the predictor variables for the regression, it is important that they are not correlated. I.e. it is of no use feeding the model both with *total.sulfur.dioxide* and *free.sulfur.dioxide*. As the analyses above shown the *quality* output is considerably affected by predictors such as *citric.acid*, *volatile.acidity*, *sulphates*, and *alcohol*. We will create a number of *proportional odds* regression models, using different combinations of predictors, and will compare their predictive strengths. The goodness-of-fit is measured via an invented indicator--predict.rate--which is a simple ratio of correctly predicted quality values to the total number of observations (another possible measure could be for example. MAD (mean absolute deviation)).
 
 The models will try are the following:
 * quality ~ citric.acid
@@ -595,7 +664,7 @@ for (mf in f) {
     # Run model prediction on the initial dataset
     w.m <- cbind(w, predict(m, w, type = "probs"))
     # Determined predicted quality based on model's odds predictions
-    w.m$predicted.quality <- apply(w.m, 1, function(x) which.max(x[c(13:18)])+2)
+    w.m$predicted.quality <- apply(w.m, 1, function(x) which.max(x[c(14:19)])+2)
     # Add a variable to the dataset saying if the predicted quality is a match
     w.m <- mutate(w.m, match=predicted.quality==quality)
     # Calculate the proportion of successful predictions
@@ -621,17 +690,16 @@ The best model (i.e. the one having the best prediction rate) is:
 best_model$formula
 ```
 
-It also has a relatively low AIC (Akaike Information Criterion), meaning that its "difficulty-to-prediction" ratio is one of the best among the tried models.
+It also has a relatively low AIC (Akaike Information Criterion), meaning that its "difficulty (information loss) to goodness-of-fit" ratio is one of the better among the tried models.
 
 The coefficients and other fitting statistics of this model are:
 
 ```{r, echo=FALSE}
 m <-  polr(best_model$formula, data=w, Hess=T)
 summary(m)
-
-exp(coef(m))
 ```
 
+We see that the predictive power of these models is far from satisfactory (< 60%). Probably, we can have better results using some machine learning approach---for example, **Random Forests** or **Support Vector Machines (SVM)** come to mind.
 
 ------
 
@@ -664,7 +732,7 @@ exp(coef(m))
 
 # Reflection
 
-Finding a way to predict the sensory quality of wines based on their physicochemical properties can fullfil a dream of winemakers and oenologists.
+Finding a way to predict the sensory quality of wines based on their physicochemical properties can fulfill a dream of winemakers and oenologists.
 
 We can go even further and imagine a model that can predict the type of the wine from the chemical measurements; or the climatic quality of the vintage year, for example.
 
