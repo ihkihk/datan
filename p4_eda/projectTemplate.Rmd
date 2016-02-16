@@ -6,8 +6,14 @@ output: html_document
 ---
 ========================================================
 
+```{r global_options, include=FALSE} 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
+```
+
+
+```{r packages}
 # Load all of the packages that you end up using
 # in your analysis in this code chunk.
 
@@ -39,29 +45,30 @@ As the authors of the dataset mention in their notes, it is possible that there 
 We start by loading the dataset (stored in a CSV file) into a data.frame:
 
 
-```{r echo=FALSE, Load_the_Data}
+```{r Load_the_Data}
 # Load the Data
 w <- read.csv("wineQualityReds.csv")
 ```
+
 Some information about the number and the structure of the observations
-```{r echo=FALSE, Dataset_structure}
+```{r Dataset_structure}
 str(w)
 ```
 
 We see that there are 1599 observation of wines, each one containing 13 variables. We can safely remove the "X" column as it simply repeats the natural index of the observations. 
-```{r echo=FALSE, Removing_X_column}
+```{r Removing_X_column}
 w$X <- NULL
 ```
 The rest of the variables are numeric. This is valid for most of them, since they are results of laboratory measurements. However, the "quality" variable is the tasting result, which is categorical variable having an ordinal scale. Therefore, we can convert this variable to an ordered factor, assuming that a higher number indicates a higher quality.
 
-```{r echo=FALSE, Converting_quality_to_factor}
+```{r Converting_quality_to_factor}
 w$quality <- factor(w$quality, ordered = T)
 str(w)
 ```
 
 In this last "str" output we clearly see that "quality" is now represented by a 6-level ordered factor with the following levels:
 
-```{r echo=FALSE, quality_levels}
+```{r quality_levels}
 levels(w$quality)
 ```
 
@@ -72,32 +79,34 @@ Otherwise, the dataset is already in a **"tidy"** state--a row per observation, 
 # Univariate Plots Section
 In this section we perform initials statistical and graphical analysis of the variables contained in the dataset.
 
+In the plots below, the red vertical lines correspond to the median value of the variable, while the brown dashed vertical lines mark the 95% percentile of the data.
 
 
 ## Fixed acidity
-```{r echo=FALSE,  Uniplot_fixed_acidity}
+```{r Uniplot_fixed_acidity}
 
 plotVar <- function(v,d) {
   name <- deparse(substitute(v))
   q1 <- qplot(data=d, x=v, fill=I("blue"), color=I("black"), alpha=0.5, xlab=name) + 
-        theme(legend.position="none")
+        theme(legend.position="none") + geom_vline(aes(xintercept=median(v)), color="red") +
+        geom_vline(aes(xintercept=quantile(v,0.95)), color="orange", linetype="dashed")
 
   q2 <- qplot(data=d, x=v, geom="density", xlab=name, fill=I("blue"), alpha=0.5) + 
-		geom_rug() + 
+		    geom_rug() + geom_vline(aes(xintercept=median(v)), color="red") +
+        geom_vline(aes(xintercept=quantile(v,0.95)), color="orange", linetype="dashed") + 
         theme(legend.position="none")
 
   q3 <- qplot(0, data=d, y=v, geom="boxplot", ylab=name) + 
 		theme(axis.title.x=element_blank())
 
-  suppressMessages(grid.arrange(q1, q2, q3, 
-                                layout_matrix=matrix(c(1,2,3,3), 2, 2)))
+  grid.arrange(q1, q2, q3, layout_matrix=matrix(c(1,2,3,3), 2, 2))
 }
 
 summary(w$fixed.acidity)
 plotVar(w$fixed.acidity, w)
 ```
 
-```{r echo=FALSE, useful_functions}
+```{r useful_functions}
 # Pearson’s measure of kurtosis
 kurtosis <- function(x) {
 	n <- length(x)
@@ -118,7 +127,7 @@ The *fixed acidity* features somewhat normal distribution with some right-skewed
 The boxplot identifies many values as outliers.
 
 ## Volatile acidity
-```{r echo=FALSE, Uniplot_volatile_acidity}
+```{r Uniplot_volatile_acidity}
 summary(w$volatile.acidity)
 plotVar(w$volatile.acidity, w)
 ```
@@ -127,7 +136,7 @@ The *volatile.acidity* has a similar right-skewed distribution (skewness = `r sk
 
 The distribution seems a bit multi-modal. We can see this on a higher-resolution histogram.
 
-```{r echo=FALSE, Uniplot_volatile_acidity_hires}
+```{r Uniplot_volatile_acidity_hires}
 
 qplot(data=w, x=volatile.acidity, fill=I("blue"), color=I("black"), alpha=0.5,
 	  binwidth = 0.01) + 
@@ -137,7 +146,7 @@ qplot(data=w, x=volatile.acidity, fill=I("blue"), color=I("black"), alpha=0.5,
 The boxplot again identifies several values as outliers. 
 
 ## Citric acid
-```{r echo=FALSE, Uniplot_citric_acid}
+```{r Uniplot_citric_acid}
 summary(w$citric.acid)
 plotVar(w$citric.acid, w)
 ```
@@ -146,13 +155,13 @@ The *citric.acid* variable has many values equal to 0, as well as one value equa
 
 As the value table below shows, the resolution of the measurement has been only 0.01 g/dm^3^, which means that all wines containing less than that will appear as 0 in the dataset.
 
-```{r echo=FALSE, Uniplot_citric_acid_table}
+```{r Uniplot_citric_acid_table}
 table(w$citric.acid)
 ```
 
 We can get a better idea about the distribution by eliminating values 0 and 1. We will also adjust the `binwidth` to correspond to the measurement resolution.
 
-```{r echo=FALSE, Uniplot_citric_acid_cleaned}
+```{r Uniplot_citric_acid_cleaned}
 cleaned.citric.acid = subset(w, citric.acid != 0 & citric.acid != 1)
 
 q1 <- qplot(data=cleaned.citric.acid, x=citric.acid, binwidth=0.01, 
@@ -161,13 +170,13 @@ q1 <- qplot(data=cleaned.citric.acid, x=citric.acid, binwidth=0.01,
 	  
 q2 <- qplot(data=cleaned.citric.acid, x=citric.acid, geom="density") + geom_rug()
 
-suppressMessages(grid.arrange(q1, q2, nrow=2))
+grid.arrange(q1, q2, nrow=2)
 ```
 
 This distribution appears **artificially** uniform towards the lower values (i.e. there is no gradual reduction of the frequency of the lower values). This can be probably explained with the fact that the winemakers usually add some amount of citric acid to give the wine a fresh (non-flat) body. Further confirmation for this is the presence of three very prominent peaks in the histogram (at 0.02, 0.24 and 0.49); especially the last two can signify that the citric amount has been artificially boosted to 0.25 or 0.50. If the citric acid amounts were due to a *natural process* (like fermentation, as is the case with the other acids), then its distribution would be more *bell-shaped* (the central limit theorem calls for normal distribution of the combined effect of many random processes.)
 
 ## Residual sugar
-```{r echo=FALSE, Uniplot_residual_sugar}
+```{r Uniplot_residual_sugar}
 summary(w$residual.sugar)
 plotVar(w$residual.sugar, w)
 ```
@@ -182,7 +191,7 @@ Sweetness               | Dry | Medium Dry |    Medium | Sweet
 
 We create a new ordered factor called `sweetness` in the original dataframe having levels corresponding to the sweetness degrees above. As the frequency table below shows most of the wines are "dry".
 
-```{r echo=FALSE, Uniplot_sweetness_bins}
+```{r Uniplot_sweetness_bins}
 w$sweetness <- cut(w$residual.sugar, 
 					c(0,4,12,45, Inf), 
 					labels=c("dry", "medium.dry", "medium", "sweet"), 
@@ -192,7 +201,7 @@ table(w$sweetness)
 ```
 
 ## Chlorides
-```{r echo=FALSE, Uniplot_chlorides}
+```{r Uniplot_chlorides}
 summary(w$chlorides)
 plotVar(w$chlorides, w)
 ```
@@ -201,7 +210,7 @@ The amount of NaCl (*chlorides*) also shows a bell-shaped distribution with a lo
 
 
 ## Free SO~2~
-```{r echo=FALSE, Uniplot_freeSO2}
+```{r Uniplot_freeSO2}
 summary(w$free.sulfur.dioxide)
 plotVar(w$free.sulfur.dioxide, w)
 ```
@@ -210,7 +219,7 @@ The winemakers use SO~2~ as an antioxidant and disinfectant. Before bottling the
 
 
 ## Total SO~2~
-```{r echo=FALSE, Uniplot_totalSO2}
+```{r Uniplot_totalSO2}
 summary(w$total.sulfur.dioxide)
 plotVar(w$total.sulfur.dioxide, w)
 ```
@@ -219,33 +228,33 @@ In Europe the permitted level of total SO~2~ is 150 mg/dm^3^ for dry red wines (
 
 
 ## Density
-```{r echo=FALSE, Uniplot_density}
+```{r Uniplot_density}
 summary(w$density)
 plotVar(w$density, w)
 ```
 
 The *density* variable follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$density)$statistic` at P=`r shapiro.test(w$density)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier tails (hence the outliers in the boxplot).
 
-```{r echo=FALSE, Uniplot_density_qq}
+```{r Uniplot_density_qq}
 qqnorm(w$density); qqline(w$density)
 ```
 
 ## pH
-```{r echo=FALSE, Uniplot_PH}
+```{r Uniplot_PH}
 summary(w$pH)
 plotVar(w$pH, w)
 ```
 
 The *pH* variable also follows a normal distribution (Shapiro-Wilk gives `r shapiro.test(w$pH)$statistic` at P=`r shapiro.test(w$pH)$p.value`). The Normal Q-Q plot below confirms this, but indicates also some heavier right tail (hence the outliers in the boxplot).
 
-```{r echo=FALSE, Uniplot_ph_qq}
+```{r Uniplot_ph_qq}
 qqnorm(w$pH); qqline(w$pH)
 ```
  
 The mean pH lies at 3.3 which is consistent with the observation that the wines of "Vinho Verde" are pretty acid and fresh.
 
 ## Sulfates
-```{r echo=FALSE, Uniplot_sulfates}
+```{r Uniplot_sulfates}
 summary(w$sulphates)
 plotVar(w$sulphates, w)
 ```
@@ -255,7 +264,7 @@ The *sulfates* variable (measuring predominantly the amount of K~2~SO~4~) has a 
 Normally fresh (not very old) wines contain around 0.4-0.7 g/dm^3^ of K~2~SO~4~ which is very well seen in the histogram (median 0.62).
 
 ## Alcohol
-```{r echo=FALSE, Uniplot_alcohol}
+```{r Uniplot_alcohol}
 summary(w$alcohol)
 plotVar(w$alcohol, w)
 ```
@@ -267,7 +276,7 @@ The *alcohol* content shows a significant right-skewedness (skewness = `r skewne
 
 The *quality* variable is categorical, so we will plot it in a barplot:
 
-```{r echo=FALSE, Uniplot_quality}
+```{r Uniplot_quality}
 summary(w$quality)
 qplot(w$quality, color=I("black"), fill=I("orange"))
 ```
@@ -319,7 +328,7 @@ Most of the distributions, however, are **right-skewed**. This normally happens 
 
 Before the *log* transformation, the *total SO~2~* variable has a normality statistics, as determined by the Shapiro-Wilk test, equal to `r shapiro.test(w$total.sulfur.dioxide)$statistic`. After the *log* transformation, Shapiro-Wilk gives `r shapiro.test(log10(w$total.sulfur.dioxide))$statistic`, i.e. the transformed variable has more normal distribution. The histograms before-and-after below confirm this:
 
-```{r echo=FALSE, Univariate_xform2normality_SO2}
+```{r Univariate_xform2normality_SO2}
 # Shapiro-Wilk before log xform
 sw1 = round(shapiro.test(w$total.sulfur.dioxide)$statistic, digits=2)
 
@@ -338,7 +347,7 @@ g2 <- ggplot(aes(x=w$total.sulfur.dioxide), data=w) +
   ggtitle(SO[2] ~ "after log xform") +
   annotate("label", label=paste0("Shapiro-Wilk = ", sw2), x=130, y=120)
 
-suppressMessages(grid.arrange(g1, g2, ncol=2))
+grid.arrange(g1, g2, ncol=2)
 
 ```
 
@@ -347,7 +356,7 @@ The most unusual distributions is the one of the *citric acid*. For didactic pur
 
 First, we plot the Q-Q normality plot of the original *citric acid* variable. It shows a rather non-normal distribution.
 
-```{r echo=FALSE, Univariate_citricacid_qq}
+```{r Univariate_citricacid_qq}
 # Normal probability plot for original variable
 citric.acid.cleaned <- subset(w, citric.acid!=0)$citric.acid
 qqnorm(citric.acid.cleaned); qqline(citric.acid.cleaned)
@@ -355,7 +364,7 @@ qqnorm(citric.acid.cleaned); qqline(citric.acid.cleaned)
 
 Then we perform the Box-Cox transformation with a plot of the Log-Likelihood profile
 
-```{r echo=FALSE, Univariate_citricacid_boxcox}
+```{r Univariate_citricacid_boxcox}
 # Illustration of Log-Likelihood profile
 boxcox(citric.acid.cleaned ~ 1)	            
 
@@ -368,7 +377,7 @@ citric.acid.transformed <- bcPower(citric.acid.cleaned, pt$lambda)
 
 Finally we plot the Q-Q plot for the transformed variable, as well a superposition of the original and transformed densities.
 
-```{r echo=FALSE, Univariate_citricacid_plots}
+```{r Univariate_citricacid_plots}
 
 # Normal probability plot for transformed variable
 qqnorm(citric.acid.transformed); qqline(citric.acid.transformed)
@@ -387,7 +396,7 @@ It seems that the Box-Cox transformation in this case does not produce a very co
 
 To achieve a quick overview of all bi-variate relations, we'll produce a scatterplot matrix:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, Bivariate_Plots_ggpairs}
+```{r Bivariate_Plots_ggpairs}
 
 ggpairs(w[, 1:12], axisLabels = "internal", title="Red Wines",
         diag=list(continuous="density"), showStrips = NULL)
@@ -399,7 +408,7 @@ From the boxplots in this matrix we easily see that our variable of interest (*q
 
 A better view of the dependence of *quality* on the input variables can be obtained from the figures below. They plot conditionally the median of each input variable at each level of *quality*:
 
-```{r echo=FALSE, Bivariate_Plots_quality_cond}
+```{r Bivariate_Plots_quality_cond}
 
 plotStat <- function(x) {
   # Clean the name of the input variable
@@ -432,7 +441,7 @@ grid.arrange(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10, ncol=2)
 
 For an easier identification of the remaining significant correlations, a correlogram can help:
 
-```{r echo=FALSE, Bivariate_Plots_corrgram}
+```{r Bivariate_Plots_corrgram}
 corrgram(w,lower.panel=corrgram::panel.ellipse, upper.panel=panel.shade,
          diag.panel=panel.density)
 ```
@@ -465,7 +474,7 @@ Strong **negative correlation** (red color) was found between:
 
 Somewhat unexpected is the positive correlation seen for *volatile acidity* (acetic acid) and *pH* (normally all acids cause lower pH). This can be due to the following phenomenon ([see here](http://www.aromadictionary.com/articles/volatileacidity_article.html)): The "acetobacter aceti" bacteria responsible for the vinegar fermentation and the production of acetic acid thrives in wines with lower fixed acidity and SO~2~ levels. Therefore, wines with higher volatile acidity will tend to have lower fixed acidity (as we see in the negative correlation between fixed/citric and volatile acidity below). 
 
-```{r echo=FALSE, Bivariate_Plots_fixedvolac}
+```{r Bivariate_Plots_fixedvolac}
 
 # Limit a bit the data
 va.p95 <- quantile(w$volatile.acidity, 0.95)
@@ -480,7 +489,7 @@ ggplot(aes(x=volatile.acidity, y=fixed.acidity),
 
 This lower fixed acidity probably is not offset by the higher content of volatile acidity (acetic acid is a very weak acid), and therefore the pH tends to rise. This acidity-pH relationship is illustrated in the diagrams below:
 
-```{r echo=FALSE, Bivariate_Plots_acidityPH}
+```{r Bivariate_Plots_acidityPH}
 
 g1 <- ggplot(aes(x=fixed.acidity, y=pH), data=w) + 
             geom_point(alpha=0.5) + 
@@ -506,7 +515,7 @@ Visually judging from the plots above, the strongest relationship could be the o
 
 An interesting experiment is to superimpose the density plots of the different variables that can be assumed to be predictors, conditional to the *quality* factor.
 
-```{r echo=FALSE, Multivariate_Plots}
+```{r Multivariate_Plots}
 
 # Plot densities of an variable conditioned by the "quality" factor
 plotDensity <- function(x) {
@@ -547,7 +556,7 @@ grid_arrange_shared_legend(p1,p2,p3,p4)
 
 Another possibility is to visually explore a given chemical measurement across both quality and sweetness levels. This can be justified since the sweetness is one of the first factors by which people evaluate wines.
 
-```{r echo=FALSE, Multivariate_sweetness_quality_facets}
+```{r Multivariate_sweetness_quality_facets}
 ggplot(w, aes(x = 0, y = pH)) +
   geom_boxplot(size = .75) +
   geom_jitter(alpha = .2, color="blue") +
@@ -584,7 +593,7 @@ On the reverse, high quality wines can have very different values of alcohol con
 
 To test this hypothesized correlation between alcohol and acetic acid levels we can plot their scatterplot faceted by the quality level.
 
-```{r echo=FALSE, Multivariate_acidity_alcohol_scatterplot}
+```{r Multivariate_acidity_alcohol_scatterplot}
 
 ggplot(data=w, aes(x=volatile.acidity, y=alcohol)) + 
 	geom_point() + geom_smooth(method=lm, color="red") + 
@@ -620,7 +629,7 @@ The models will try are the following:
 
 After fitting these models, a summary table will be printed sorted by increasing value of the "prediction rate".
 
-```{r echo=FALSE, Multivariate_ologit}
+```{r Multivariate_ologit}
 
 # Define model formulas
 f <- c("quality ~ citric.acid",
@@ -672,7 +681,7 @@ best_model <- models[models$predict.rate.n == max(models$predict.rate.n),]
 
 According to the table above, the best model (i.e. the one having the best prediction rate) is:
 
-```{r, echo=FALSE, Models_best}
+```{r, Models_best}
 best_model$formula
 ```
 
@@ -680,7 +689,7 @@ It also has a relatively low AIC (Akaike Information Criterion), meaning that it
 
 The coefficients and other fitting statistics of this model are:
 
-```{r, echo=FALSE}
+```{r model_coeff}
 m <-  polr(best_model$formula, data=w, Hess=T)
 summary(m)
 ```
@@ -692,45 +701,134 @@ We see that the predictive power of these models is far from satisfactory (< 60%
 # Final Plots and Summary
 
 ### Plot One
-```{r echo=FALSE, fig.height=9, Plot_One}
-a<-c(fill="green",alpha=0.5)
-r1 <- ggplot(data=w, aes(x=fixed.acidity)) + geom_density(fill="green",alpha=0.5)
-r2 <- ggplot(data=w, aes(x=volatile.acidity)) + geom_density(fill="green",alpha=0.5)
-r3 <- ggplot(data=w, aes(x=citric.acid)) + geom_density(fill="green",alpha=0.5)
-r4 <- ggplot(data=w, aes(x=pH)) + geom_density(fill="green",alpha=0.5)
-r5 <- ggplot(data=w, aes(x=density)) + geom_density(fill="green",alpha=0.5)
-r6 <- ggplot(data=w, aes(x=residual.sugar)) + geom_density(fill="green",alpha=0.5)
-r7 <- ggplot(data=w, aes(x=total.sulfur.dioxide)) + geom_density(fill="green",alpha=0.5)
-r8 <- ggplot(data=w, aes(x=free.sulfur.dioxide)) + geom_density(fill="green",alpha=0.5)
-r9 <- ggplot(data=w, aes(x=alcohol)) + geom_density(fill="green",alpha=0.5)
-r10 <- ggplot(data=w, aes(x=sulphates)) + geom_density(fill="green",alpha=0.5)
-r11 <- ggplot(data=w, aes(x=chlorides)) + geom_density(fill="green",alpha=0.5)
-r12 <- ggplot(data=w, aes(x=quality)) + geom_bar(fill="green",alpha=0.5)
+```{r fig.height=9, Plot_One}
+
+plotOne <- function(w, v) {
+  name <- substitute(v)[[3]]
+  ggplot(data=w, aes(x=v)) + geom_density(fill="green",alpha=0.5) + 
+      geom_vline(aes(xintercept = median(v)), color="red") +
+      xlab(name)
+}
+
+r1 <- plotOne(w, w$fixed.acidity)
+r2 <- plotOne(w, w$volatile.acidity)
+r3 <- plotOne(w, w$citric.acid)
+r4 <- plotOne(w, w$pH)
+r5 <- plotOne(w, w$density)
+r6 <- plotOne(w, w$residual.sugar)
+r7 <- plotOne(w, w$total.sulfur.dioxide)
+r8 <- plotOne(w, w$free.sulfur.dioxide)
+r9 <- plotOne(w, w$alcohol)
+r10 <- plotOne(w, w$sulphates)
+r11 <- plotOne(w, w$chlorides)
+r12 <- ggplot(data=w, aes(x=quality)) + geom_bar(fill="green",color="black",alpha=0.5)
 
 grid.arrange(r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, ncol=2, 
-             top="Distributions of the physicochemical measurements of red wines",
+             top=paste0("Distributions of the physicochemical measurements of red wines",
+                        " (red lines denote medians)"),
              heights=rep(unit(1.3,"inch"), 6))
 ```
 
 ### Description One
-Most of the measurements feature right-skewed distributions, some of them with very long but thin tails (residual.sugar, chlorides), others with fat tails (alcohol, sulphates, sulfites, fixed.acidity). Closest to normal are the distributions of pH and density.
 
-The volatile.acidity has right-skewed, probably bi-modal distribution.
+As a first plot we will show the distribution (as a density) of all the variables. This is the most direct way to get an immediate all-encompasing overview of the major mono-variate properties of the measurements. 
 
-Finally, citric acid has a what appears to be tri-modal distribution, sharply cut to the left due to the measurement's limited precision.
+We can glean the following information about the variables and their behavior (summarized here, treated in detail above in the text):
+
+* Some variables visually seem to have a pretty *normal* distribution. These include: *pH*, *density*, *residual sugars*, *chlorides*. The Shapiro-Wilk test gives the following normality statistics for them:
+
+Variable        | Shapiro-Wilk statistics               | p-Value
+----------------|---------------------------------------|-------------------------------------
+chlorides       | `r shapiro.test(w$chlorides)$st`      | `r shapiro.test(w$chlorides)$p`
+density         | `r shapiro.test(w$density)$st`        | `r shapiro.test(w$density)$p`
+pH              | `r shapiro.test(w$pH)$st`             | `r shapiro.test(w$pH)$p`
+residual sugars | `r shapiro.test(w$residual.sugar)$st` | `r shapiro.test(w$residual.sugar)$p`
+
+In fact this test confirms the normality only of *pH* and *density*, but not of the other two variables. This can be because they have very long and thin right tails (i.e. a lot of outliers). This is really visible on the boxplots for these two measurements in the mono-variate section above. If we repeat the Shapiro-Wilk test only on the data below the 95% quantile, we can really see that the bulk of *chloride* and *residual sugar* data is normally distributed:
+
+```{r shapiro_wilk_sugar_chl}
+chlorides.q95 <- subset(w$chlorides, w$chlorides < quantile(w$chlorides,0.95))
+chlorides.shapiro.s <- shapiro.test(chlorides.q95)$st
+chlorides.shapiro.p <- shapiro.test(chlorides.q95)$p
+
+residual.sugar.q95 <- subset(w$residual.sugar, w$residual.sugar < quantile(w$residual.sugar,0.95))
+residual.sugar.shapiro.s <- shapiro.test(residual.sugar.q95)$st
+residual.sugar.shapiro.p <- shapiro.test(residual.sugar.q95)$p
+
+```
+
+Variable               | Shapiro-Wilk statistics               | p-Value
+-----------------------|---------------------------------------|-------------------------------------
+chlorides < 95%        | `r chlorides.shapiro.s`               | `r chlorides.shapiro.p`
+residual sugars  < 95% | `r residual.sugar.shapiro.s`          | `r residual.sugar.shapiro.p`
+
+The *normality* of such physicochemical measurements indicates that there is a **naturally progressing** physical/chemical phenomenon responsible for the value of the given measurement. Such a phenomenon could be the fermentation (which can be viewed as the summed and overlapping action of millions of bacteries), or the intake of chlorides from the soil (which is the result of the osmotic action of the millions of small root hairs of the vine plant).  
+
+* The rest of the measurements feature predominantly right-skewed distributions. The following table lists the skeweness of these variables (values > 0 indicate right-skewedness):
+
+Variable               | Pearson skewness           
+-----------------------|--------------------------------
+alcohol                | `r skewness(w$alcohol)`
+citric.acidity         | `r skewness(w$citric.acid)`
+fixed.acidity          | `r skewness(w$fixed.acidity)`   
+volatile.acidity       | `r skewness(w$volatile.acidity)`
+free.sulfur.dioxide    | `r skewness(w$free.sulfur.dioxide)`
+total.sulfur.dioxide   | `r skewness(w$total.sulfur.dioxide)`
+sulphates              | `r skewness(w$sulphates)`   
+volatile.acidity       | `r skewness(w$volatile.acidity)`
+
+The right-skewedness, contrary to the normal distribution, is more typical of processes having an **artificially** set lower limit---this could be a legislative requirement (as for the alcohol content), or technological depedendancy (such as the minimal levels of SO~2~ needed for reliable protection of the wine)
+
+* Finally, the *citric acid* has a what appears to be tri-modal distribution, sharply cut to the left due to the measurement's limited precision. The three peaks in the distribution were seen to coincide with certain "round-number" levels of citric acid contents--indicative of the winemakers' artificial adding of this acid to correct the overall acidity of the wine.
+
 
 ### Plot Two
-```{r echo=FALSE, Plot_Two}
+```{r Plot_Two}
 corrgram(w,lower.panel=corrgram::panel.conf, upper.panel=panel.shade)
 title("Correlations between the measured quantities")
 ```
 
 ### Description Two
 
-The correlation matrix shows visually and numerically the relationships between the different measurement variables. Red is negative correlation, blue is positive. The more saturated a color is, the stronger the correlation. The correlation coefficients are given with their 95% CI. As identified in the section for Bi-variate analysis, there is a physical/chemical causation explaining most of the strong correlations (e.g. higher fixed acidity translates into a lower pH).
+As a second plot we will provide a correlation matrix. This is the quickest and most direct way to view the bi-variate relationships (quantified as correlations) between the variables. Red is negative correlation, blue is positive. The more saturated a color is, the stronger the correlation. The correlation coefficients are given with their 95% CI. As identified in the section for Bi-variate analysis, there is a physical/chemical causation explaining most of the strong correlations (e.g. higher fixed acidity translates into a lower pH).
+
+The following table gives the strongest positive correlations:
+```{r fig.height=3, cor_pos}
+# Get all cross-corellations
+w.corr <- cor(w[-(12:13)])
+
+# Set auto-correlations to 0
+w.corr[w.corr == 1] <- 0
+
+# Sort and remove duplicates (the correlation matrix is symetrical!)
+w.corr.sorted <- sort(w.corr)
+w.corr.sorted <- w.corr.sorted[-(1:length(w.corr.sorted))*2]
+
+# Obtain the variable names for each correlation pair
+corr.names <- sapply(w.corr.sorted, function(x) which(w.corr==x, arr.ind=T))
+corr.var1 <- sapply(corr.names, function(x) rownames(x)[1])
+corr.var2 <- sapply(corr.names, function(x) rownames(x)[2])
+xcor <- data.frame(corr_coeff=w.corr.sorted, var1=corr.var1, var2=corr.var2)
+
+# Print the highest positive correlations
+grid.table(head(xcor[order(xcor$corr_coeff,decreasing = T),]))
+```
+
+As already seen, the strongest positive correlations are between measurements that include/repeat each other, as well as between *density* and *fixed.acidity* (physically explainable given the densities of the wine acids).
+
+The following table gives the strongest negative correlations:
+```{r fig.height=3, cor_neg}
+# Print the highest negative correlations
+grid.table(head(xcor))
+```
+
+Strongest negative correlation is seen between *pH* and the *acidities* (since pH is a measurement of the acidity), and between *alcohol* and *density* (again explained with the relative density of alcohol).
+
+Identifying the correlated variables is important before performing a regression modeling, since we have to avoid feeding the model with predictors that are correlated (danger of **multicollinearity**).
+
 
 ### Plot Three
-```{r echo=FALSE, fig.height=8, Plot_Three}
+```{r fig.height=9, Plot_Three}
 grid.arrange(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10, ncol=2,
              heights=rep(unit(1.3,"inch"), 6),
              top = "Evolution of the medians of each measurement, conditional on quality")
@@ -738,7 +836,29 @@ grid.arrange(q1,q2,q3,q4,q5,q6,q7,q8,q9,q10, ncol=2,
 
 ### Description Three
 
-This final plot shows how the median of the observations for each measured variable behaves at different quality levels. Monotonous plots (like the ones for alcohol, citric acid, volatile acidity, sulphates) directly identify those physicochemical properties that can be used as predictors of the *quality* output. They can serve as inputs to regression or machine learning models.
+The final plot prepares us to select the variables that can serve as inputs for a quality-predicting model (like logistic regression or machine learning algorithms)
+
+In this plot we show how the different physicochemical quantities behave at different quality levels. For this we draw their median values conditioned on the quality level. 
+
+We see directly that some of the quantities have a monotonous relationship to quality. These  physicochemical properties make the best candidates for predictors of the *quality* output.
+
+The following table summarizes the observed relationships:
+
+Input variable    | Relationship to *quality*
+------------------|--------------------------
+fixed acidity     | non-monotonous
+volatile acidity  | decreasing, perfectly monotonous
+citric acid       | increasing, perfectly monotonous
+free SO~2~        | non-monotonous
+total SO~2~       | non-monotonous
+residual sugar    | non-monotonous
+sulphates         | increasing, monotonous
+chlorides         | decreasing, somewhat monotonous
+alcohol           | increasing, monotonous
+pH                | decreasing, somewhat monotonous
+density           | decreasing, somewhat monotonous
+
+We see that the best quality predictors candidates are *volatile acidity*, *citric acid*, *sulphates* and *alcohol*. The previous correlation analysis also shows that there is no strong correlation between these quantities, so any combination of them can serve as an input to a regression model. 
 
 ------
 
