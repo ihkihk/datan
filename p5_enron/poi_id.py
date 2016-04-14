@@ -4,6 +4,7 @@ import sys
 import pickle
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("./tools/")
 
 from feature_format import featureFormat, targetFeatureSplit
@@ -18,9 +19,11 @@ features_list = ['poi','salary','total_payments'] # You will need to use more fe
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
 
-print data_dict.keys()
-print data_dict.popitem()
-print data_dict.popitem()[1].keys()
+record_names = data_dict.keys()
+print "Number of records: ", len(record_names)
+print record_names
+features = data_dict[record_names[0]].keys()
+print "Number of features in each record: ", len(features)
 
 # Convert to pandas
 data_df = pd.DataFrame.from_dict(data_dict, orient='index', dtype=np.number)
@@ -31,6 +34,10 @@ print data_df.dtypes
 print data_df.describe()
 
 ### Task 2: Remove outliers
+plt.figure()
+data_df.salary.plot()
+plt.show()
+
 ### Task 3: Create new feature(s)
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
