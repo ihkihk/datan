@@ -5,7 +5,24 @@ import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import NearestNeighbors
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import f_classif, SelectKBest
+from sklearn.preprocessing import StandardScaler, Imputer, MinMaxScaler, PolynomialFeatures
+from sklearn.decomposition import PCA, KernelPCA
+from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import cross_val_score, StratifiedKFold, StratifiedShuffleSplit
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
+
 sys.path.append("./tools/")
+
 
 from feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data
@@ -25,11 +42,9 @@ features_list = ['poi',
         'restricted_stock_deferred',
         'total_stock_value',
         'expenses',
-        'loan_advances',
         'from_messages',
         'other',
         'from_this_person_to_poi',
-        'director_fees',
         'deferred_income',
         'long_term_incentive',
         'from_poi_to_this_person'] # You will need to use more features
@@ -40,10 +55,8 @@ with open("final_project_dataset.pkl", "r") as data_file:
 
 record_names = data_dict.keys()
 print "Number of records: ", len(record_names)
-print record_names
 features = data_dict[record_names[0]].keys()
 print "Number of features in each record: ", len(features)
-print "Features: ", features
 
 # Convert to pandas
 data_df = pd.DataFrame.from_dict(data_dict, orient='index', dtype=np.float)
@@ -51,10 +64,13 @@ data_df = pd.DataFrame.from_dict(data_dict, orient='index', dtype=np.float)
 ### Task 2: Remove outliers
 print "Removing outliers"
 df_cleaned = data_df.drop(['TOTAL', 'LOCKHART EUGENE E'])
-del(df_cleaned['email_address'])
 
-print "Imputing missing values"
-df_cleaned = df_cleaned.fillna(df_cleaned.median())
+# Remove unwanted features
+print "Removing unwanted features"
+del(df_cleaned['email_address'])
+del(df_cleaned['loan_advances'])
+del(df_cleaned['director_fees'])
+
 
 
 ### Task 3: Create new feature(s)
@@ -66,11 +82,19 @@ df_cleaned['shared_poi_messages_ratio'] = df_cleaned['shared_receipt_with_poi'] 
 
 features_list.extend(['total_gains', 'from_poi_messages_ratio', 'shared_poi_messages_ratio'])
 
+### Impute missing values
+print "Imputing missing values"
+df_cleaned = df_cleaned.fillna(df_cleaned.median())
+
 my_dataset = df_cleaned.to_dict('index')
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
+
+### Imputing missing values
+#imputer = Imputer(strategy='median')
+#features = imputer.fit_transform(features)
 
 ### Task 4: Try a varity of classifiers
 ### Please name your classifier clf for easy export below.
@@ -79,20 +103,6 @@ labels, features = targetFeatureSplit(data)
 ### http://scikit-learn.org/stable/modules/pipeline.html
 
 # Provided to give you a starting point. Try a variety of classifiers.
-from sklearn.pipeline import Pipeline
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import NearestNeighbors
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import f_classif, SelectKBest
-from sklearn.preprocessing import StandardScaler, Imputer, MinMaxScaler, PolynomialFeatures
-from sklearn.decomposition import PCA, KernelPCA
-from sklearn.grid_search import GridSearchCV
-from sklearn.cross_validation import cross_val_score, StratifiedKFold, StratifiedShuffleSplit
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
-
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall
 ### using our testing script. Check the tester.py script in the final project
@@ -106,13 +116,22 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 #features_train, features_test, labels_train, labels_test = \
 #    train_test_split(features, labels, test_size=0.3, random_state=42)
 
+def print_clf_scores(clf, X, y, n_iter=1000):
+    ccv = StratifiedShuffleSplit(y, n_iter=n_iter, random_state=42)
+    print "Recall:    ", cross_val_score(clf, X, y, cv=ccv, scoring='recall').mean()
+    print "Precision: ", cross_val_score(clf, X, y, cv=ccv, scoring='precision').mean()
+    print "F1 score:  ", cross_val_score(clf, X, y, cv=ccv, scoring='f1').mean()
+    print "Accuracy:  ", cross_val_score(clf, X, y, cv=ccv, scoring='accuracy').mean()
+    print "ROC_AUC:   ", cross_val_score(clf, X, y, cv=ccv, scoring='roc_auc').mean()
+
 def get_logreg_model():
-    print "Logistic Regression"
-    print "==================="
-    n_jobs = -1 # Set to -1 to use all CPU
+    n_jobs = 1 # Set to -1 to use all CPU
     scoring = 'recall' # Better adapted to unbalanced feature classes
 
-    clf = Pipeline([('poly', PolynomialFeatures(interaction_only=True)),
+    print "Logistic Regression"
+    print "==================="
+
+    clf = Pipeline([#('poly', PolynomialFeatures(interaction_only=True)),
                     ('kbest', SelectKBest()), 
                     ('scaler', MinMaxScaler()), 
                     ('pca', PCA()), 
@@ -121,31 +140,30 @@ def get_logreg_model():
 
     poly_degree = [1, 2]
     n_components = [2, 3, 4, 5, 6, 7]
-    Cs = np.logspace(-4, 4, 3)
-    k = [8, 10, 12, 14, 16, 18]
-    
-    cv = StratifiedShuffleSplit(labels, n_iter=10, random_state=42)
-    grid_search = GridSearchCV(clf, dict(poly__degree=poly_degree, 
+    Cs = np.logspace(-4, 2, 4)
+    k = [12, 14, 16, 18, 'all']
+
+    print "Starting training..."
+    cv = StratifiedShuffleSplit(labels, n_iter=50, random_state=42)
+    grid_search = GridSearchCV(clf, dict(#poly__degree=poly_degree, 
                                          pca__n_components=n_components, 
                                          kbest__k=k, logreg__C=Cs), 
                                cv=cv, error_score=0, scoring=scoring, n_jobs=n_jobs)
     grid_search.fit(features, labels)
+    print "Training finished"
 
     print "Best score achieved by GridSearch: ", grid_search.best_score_
-    print "Best parameters found by GridSearch:"
-    print "\tPolyFeatures degree: ", grid_search.best_params_['poly__degree']
-    print "\tKBest k: ", grid_search.best_params_['kbest__k']
+    best_k = grid_search.best_params_['kbest__k']
+    if best_k == 'all':
+            best_k = len(features[0])
+    print "\tKBest k: ", best_k
     print "\tPCA n_components: ", grid_search.best_params_['pca__n_components']
     print "\tLogReg C: ", grid_search.best_params_['logreg__C']
-    print "Features selected by KBest (with their p-values):"
-    best_kbest = grid_search.best_estimator_.named_steps['kbest']
-    best_kbest_k = best_kbest.k
-    sort_idx = best_kbest.pvalues_.argsort()[-best_kbest_k:][::-1]
-    kbest_pvalues = best_kbest.pvalues_[sort_idx]
-    kbest_features = feature_names[sort_idx].values
-    print zip(kbest_features, kbest_pvalues)
 
     clf = grid_search.best_estimator_
+
+    print_clf_scores(clf, features, labels)
+
     return clf
 
 def get_randforest_model():
@@ -208,7 +226,6 @@ def get_svc_model():
                                cv=cv, error_score=0, scoring=scoring, n_jobs=n_jobs)
     grid_search.fit(features, labels)
     
-    print "Best score achieved by GridSearch: ", grid_search.best_score_
     print "Best parameters found by GridSearch:"
     print "\tPolyFeatures degree: ", grid_search.best_params_['poly__degree']
     print "\tKBest k: ", grid_search.best_params_['kbest__k']
@@ -218,9 +235,11 @@ def get_svc_model():
     
     return grid_search.best_estimator_
 
-#clf = get_logreg_model()
+t = time.time()
+clf = get_logreg_model()
 #clf = get_randforest_model()
-clf = get_svc_model()
+#clf = get_svc_model()
+print "Elapsed training time [s]: ", time.time()-t 
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
@@ -228,3 +247,4 @@ clf = get_svc_model()
 ### generates the necessary .pkl files for validating your results.
 
 dump_classifier_and_data(clf, my_dataset, features_list)
+
