@@ -5,20 +5,121 @@
 <head>
 
 	<meta charset='utf-8'>
+	<meta name="viewport" content="width=device-width">
+	<title>Visual exploration of Prosper loans (Project 6)</title>
+	
+	<link href='https://fonts.googleapis.com/css?family=Old+Standard+TT' rel='stylesheet' type='text/css'>
+	<link href='https://fonts.googleapis.com/css?family=Vollkorn:400,400italic' rel='stylesheet' type='text/css'>
 	
 	<script type='text/javascript' src="https://d3js.org/d3.v3.min.js"></script>
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js" 
 			integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
 	
 	<style>
-	h1 {
+		
+	#ddiv-chart {
+		margin: auto;
+		width: 1050px;
+		height: 850px;
+		position: absolute;
+		margin: auto;
+		top:0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+	}
+	.ccenterFlex {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+	}
+
+	#div-chart {
+		/* Center vert/horiz in the middle of the page */
+		display: inline-block;
+		top: 50%;
+		left: 50%;
+		position: absolute;
+		transform: translate(-50%, -50%);
+	}
 	
-	};
+	svg.canvas {
+		border-style: solid;
+		border-color: black;
+		border-width: 1px;
+		border-radius: 10px;
+	}
+
+	body {
+		font-family: "Old Standard TT", Verdana, sans-serif;
+	}
+	h1 {
+		font-size: 40px;
+		text-align: center;
+		line-height: 150%;
+	}
+	
+	footer {
+		display: block;
+		position: absolute;
+		bottom: 2%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		
+		font-family: Vollkorn, Verdana, sans-serif;
+		font-style: italic;
+	}
 	</style>
 
 </head>
 
 <body>
+	<h1>Visual Exploration of Prosper Loans</h1>
+	
+	<div id="div-chart">
+	</div>
+	
+	<script type='text/javascript'>
+	var margin = 30,
+		viz_width = 1000,
+		viz_height = 800,
+		canvas_width = viz_width + 2 * margin,
+		canvas_height = viz_height + 2 * margin;
+			
+	function createCanvas() {
+		return d3.selectAll('#div-chart').
+			append('svg').
+			attr('class', 'canvas').
+			attr('width', canvas_width).
+			attr('height', canvas_height).
+			append('g').
+			attr('class', 'viz').
+			// Move the coordinate origin to the natural bottom left corner
+			attr('transform', 'translate(' + margin + ', ' + (viz_height + margin) + ') scale(1,-1)');
+	} // end function createCanvas(...)
+	
+	function showViz(data) {
+	
+		var svg = createCanvas();
+		
+		svg.append('line').
+			attr('x1', 0).
+			attr('y1', 0).
+			attr('y2', viz_height/2).
+			attr('x2', viz_width/2).
+			style('stroke', 'red').
+			style('stroke-width', '2px');
+	} // end function showViz(...)
+	
+	//d3.csv('prosper_loans.json', showViz);
+	showViz();
+	</script>
+	
+
+	<footer>
+	&copy; Ivailo Kassamakov 2016, GPL v.3
+	</footer>
+
 
 </body>
 
