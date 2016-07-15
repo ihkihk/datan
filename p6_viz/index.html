@@ -7,18 +7,18 @@
 	<meta charset='utf-8'>
 	<meta name="viewport" content="width=device-width">
 	<title>Visual exploration of Prosper loans (Project 6)</title>
-	
+
 	<link href='https://fonts.googleapis.com/css?family=Old+Standard+TT' rel='stylesheet' type='text/css'>
 	<link href='https://fonts.googleapis.com/css?family=Vollkorn:400,400italic' rel='stylesheet' type='text/css'>
-	
+
 	<script type='text/javascript' src="https://d3js.org/d3.v3.min.js"></script>
-	<script src="https://code.jquery.com/jquery-3.1.0.min.js" 
+	<script src="https://code.jquery.com/jquery-3.1.0.min.js"
 			integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
-	
-	<script type='text/javascript' src="drawPrimitives.js"></script>
-	
+
+	<script type='text/javascript' src="js/drawPrimitives.js"></script>
+
 	<style>
-		
+
 	#ddiv-chart {
 		margin: auto;
 		width: 1050px;
@@ -44,21 +44,21 @@
 		position: absolute;
 		transform: translate(-50%, -50%);
 	}
-	
+
 	svg.canvas {
 		border-style: solid;
 		border-color: black;
 		border-width: 1px;
 		border-radius: 10px;
 	}
-	
+
 	.story-button rect {
 		stroke: black;
 		stroke-width: 3px;
 		fill: red;
 		opacity: 0.6;
 	}
-	
+
 	.story-button rect:hover {
 		fill: lightGreen;
 	}
@@ -70,7 +70,7 @@
 		font-family : Verdana, sans-serif;
 		font-weight: bold;
 	}
-	
+
 	body {
 		font-family: "Old Standard TT", Verdana, sans-serif;
 	}
@@ -79,14 +79,14 @@
 		text-align: center;
 		line-height: 150%;
 	}
-	
+
 	footer {
 		display: block;
 		position: absolute;
 		bottom: 2%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		
+
 		font-family: Vollkorn, Verdana, sans-serif;
 		font-style: italic;
 	}
@@ -96,73 +96,73 @@
 
 <body>
 	<!--<h1>How people in the US take credits (based on statistics of Prosper Loans)</h1>-->
-	
+
 	<div id="div-chart">
 	</div>
-	
+
 	<script type='text/javascript'>
 
 	var pageView{
-	
+
 	};
-	
+
 	var storyCtrl = {
 		pages: Array(3),
-		
+
 		selectPage: function(pageNo) {
 			alert("selectPage: " + pageNo);
 		},
-		
+
 		createPages: function() {
-		
+
 		}
 	};
-	
+
 	var storyView = {
 		canvas: null,
 		width: null,
 		height: null,
 		ownCtrl: null,
 		parentCtrl:null,
-		
+
 		create: function(canvas, ownCtrl, parentCtrl)
 		{
 			debugger;
 			this.canvas = canvas;
 			this.ownCtrl = ownCtrl;
 			this.parentCtrl = parentCtrl;
-			
+
 			var width = getElementPropertyPx(canvas[0][0].parentNode, 'width');
-			
+
 			var storyBtnW = 150, storyBtnH = 100, paddingBetweenBut = 250,
 				ribbonLen = 3 * storyBtnW + 2 * paddingBetweenBut,
 				ribbonOffsetFromView = (width - ribbonLen) / 2;
-				
-			var butCoords = [	{x: 0,                                 y: 0}, 
+
+			var butCoords = [	{x: 0,                                 y: 0},
 								{x: storyBtnW + paddingBetweenBut,     y: 0},
 								{x: 2*(storyBtnW + paddingBetweenBut), y: 0}];
-			
+
 			var storyButtonsRibbon = canvas.append('g').
 				attr('class', 'story-button-ribbon').
 				attr('transform', 'translate(' + ribbonOffsetFromView + ', ' + 10 + ')');
-			
-			drawTextButton(canvas, storyButtonsRibbon, 
-				butCoords[0].x, butCoords[0].y, storyBtnW, storyBtnH, 
-				"Which state takes highest loans", 'story-button', 
+
+			drawTextButton(canvas, storyButtonsRibbon,
+				butCoords[0].x, butCoords[0].y, storyBtnW, storyBtnH,
+				"Which state takes highest loans", 'story-button',
 				function() { ownCtrl.selectPage(1); });
-			
-			drawTextButton(canvas, storyButtonsRibbon, 
-				butCoords[1].x, butCoords[1].y, storyBtnW, storyBtnH, 
-				"Which profession takes highest loans", 'story-button', 
+
+			drawTextButton(canvas, storyButtonsRibbon,
+				butCoords[1].x, butCoords[1].y, storyBtnW, storyBtnH,
+				"Which profession takes highest loans", 'story-button',
 				function() { ownCtrl.selectPage(2); });
-			
-			drawTextButton(canvas, storyButtonsRibbon, 
-				butCoords[2].x, butCoords[2].y, storyBtnW, storyBtnH, 
-				"Which people default on their loans", 'story-button', 
+
+			drawTextButton(canvas, storyButtonsRibbon,
+				butCoords[2].x, butCoords[2].y, storyBtnW, storyBtnH,
+				"Which people default on their loans", 'story-button',
 				function() { ownCtrl.selectPage(3); });
 		}, // end function create(...)
 	};
-	
+
 	var mainCtrl = {
 		curStoryPage: 1,
 
@@ -179,12 +179,12 @@
 			},
 			svg: null
 		}.init(),
-		
+
 		init: function() {
 			this.createSVG();
 			story = storyView.create(this.viz.svg, storyCtrl, this);
 		},
-		
+
 		createSVG: function() {
 			var svg = d3.selectAll('#div-chart').
 				append('svg').
@@ -195,17 +195,17 @@
 				attr('class', 'viz').
 				// Move the coordinate origin to the natural bottom left corner
 				attr('transform', 'translate(' + this.viz.story_margin + ', ' + this.viz.story_margin + ')');
-				
+
 			this.viz.svg = svg;
 		}, // end function createCanvas(...)
-		
+
 	};
-	
-		
+
+
 	mainCtrl.init();
 	//d3.csv('prosper_loans.json', storyCtrl.dataReady);
 	</script>
-	
+
 
 	<footer>
 	&copy; Ivailo Kassamakov 2016, GPL v.3
