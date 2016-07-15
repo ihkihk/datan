@@ -1,0 +1,55 @@
+/*******************************************************************************
+ * File:        viz.js
+ * Project:     DATAN P6
+ * Purpose:     CSS styles for the P6 visualization
+ * Author:      Ivailo Kassamakov (c) 2016
+ * Created:     15-Jul-2016  
+ * Last change: 
+ * Notes:       
+ ******************************************************************************/
+ 
+/*@import url("filter.svg");*/
+ 
+.viz-canvas {
+	border-style: solid;
+	border-color: black;
+	border-width: 1px;
+	border-radius: 10px;
+}
+
+.story-button rect {
+	stroke: black;
+	stroke-width: 3px;
+	fill: red;
+	opacity: 0.6;
+}
+
+.story-button rect:hover {
+	fill: lightGreen;
+}
+
+.story-button.clicked  rect{
+	fill: lightYellow;
+}
+
+.story-button.clicked  rect:hover{
+	fill: lightGreen;
+}
+
+.story-button text {
+	/* Make mouseover events go to the button rect */
+	pointer-events: none;
+	font-size : 14px;
+	font-family : Verdana, sans-serif;
+	font-weight: bold;
+}
+
+.story-page0 rect {
+	fill: lightYellow;
+	opacity: 1;
+	stroke: black;
+	stroke-width: 1px;
+	filter: url("#f3");
+}
+
+/* EOF */

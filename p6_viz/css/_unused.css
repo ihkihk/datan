@@ -1,0 +1,21 @@
+#div-chart {
+	margin: auto;
+	width: 1050px;
+	height: 850px;
+	position: absolute;
+	margin: auto;
+	top:0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+.centerFlex {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+}
+.story-page0 rect.shadow {
+	fill: rgb(200,200,200);
+	opacity: 1;
+	stroke: none;
+}
